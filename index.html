@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Asset Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --g800:#0d3d28;--g700:#14532d;--g600:#1a6e49;--g500:#22875b;
+  --g400:#2e9e6a;--g200:#86efbc;--g100:#c6ecd8;--g50:#f0faf5;
+  --s800:#1e293b;--s700:#334155;--s600:#475569;--s500:#64748b;
+  --s400:#94a3b8;--s300:#cbd5e1;--s200:#e2e8f0;--s100:#f1f5f9;--s50:#f8fafc;
+  --red:#dc2626;--red-bg:#fef2f2;--red-b:#fecaca;
+  --amber:#d97706;--amber-bg:#fffbeb;--amber-b:#fde68a;
+  --white:#fff;
+  --r8:8px;--r12:12px;--r16:16px;--r20:20px;--r24:24px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--s100);color:var(--s800);min-height:100vh;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+
+/* ── LOGIN ── */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--g800);position:relative;overflow:hidden}
+#loginScreen::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:rgba(255,255,255,.04);top:-200px;right:-150px;pointer-events:none}
+#loginScreen::after{content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.03);bottom:-100px;left:-80px;pointer-events:none}
+.login-card{background:var(--white);border-radius:var(--r24);padding:36px 32px 40px;width:100%;max-width:400px;position:relative;z-index:1;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-icon{width:52px;height:52px;background:linear-gradient(135deg,var(--g400),var(--g600));border-radius:var(--r16);display:flex;align-items:center;justify-content:center;margin-bottom:24px;box-shadow:0 4px 14px rgba(46,158,106,.4)}
+.login-icon svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.login-title{font-size:24px;font-weight:700;color:var(--g800);margin-bottom:4px;letter-spacing:-.3px}
+.login-sub{font-size:13.5px;color:var(--s500);margin-bottom:28px}
+
+/* ── FORM ── */
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+label{font-size:11.5px;font-weight:700;color:var(--s600);text-transform:uppercase;letter-spacing:.07em}
+input,select{border:1.5px solid var(--s300);border-radius:var(--r8);padding:12px 14px;font-family:inherit;font-size:15px;color:var(--s800);background:var(--s50);outline:none;transition:border-color .15s,background .15s,box-shadow .15s;appearance:none;-webkit-appearance:none;width:100%}
+input:focus,select:focus{border-color:var(--g400);background:var(--white);box-shadow:0 0 0 3px rgba(46,158,106,.14)}
+input[readonly]{background:var(--s100);color:var(--s500);cursor:default}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1.5l6 6 6-6' stroke='%2394a3b8' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:40px;cursor:pointer}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:var(--r8);font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;user-select:none}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--g600);color:#fff}
+.btn-p:hover{background:var(--g700)}
+.btn-p:disabled{background:var(--s300);color:var(--s400);cursor:not-allowed;transform:none}
+.btn-s{background:var(--s200);color:var(--s700);border:1.5px solid var(--s300)}
+.btn-s:hover{background:var(--s300)}
+.btn-login{width:100%;background:linear-gradient(135deg,var(--g500),var(--g700));color:#fff;border:none;border-radius:var(--r12);padding:14px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;transition:all .2s;box-shadow:0 4px 14px rgba(26,110,73,.35)}
+.btn-login:hover{background:linear-gradient(135deg,var(--g400),var(--g600))}
+.btn-login:active{transform:scale(.98)}
+.btn-login:disabled{background:var(--s300);color:var(--s400);cursor:not-allowed;box-shadow:none;transform:none}
+.btn-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:var(--r8);background:var(--s200);border:1.5px solid var(--s300);cursor:pointer;color:var(--s600);font-size:16px;transition:all .15s;flex-shrink:0}
+.btn-icon:hover{background:var(--s300)}
+
+/* ── MESSAGES ── */
+.msg{padding:12px 15px;border-radius:var(--r8);font-size:13.5px;font-weight:500;margin-top:12px;display:none;line-height:1.5}
+.msg.ok{background:var(--g50);color:var(--g700);border:1.5px solid var(--g100);display:block}
+.msg.err{background:var(--red-bg);color:var(--red);border:1.5px solid var(--red-b);display:block}
+.msg.info{background:var(--amber-bg);color:var(--amber);border:1.5px solid var(--amber-b);display:block}
+
+/* ── APP SHELL ── */
+#appScreen{display:none}
+.topbar{background:var(--g800);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;position:sticky;top:0;z-index:200}
+@media(min-width:640px){.topbar{padding:0 24px}}
+.topbar-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;flex:1;min-width:0}
+.topbar-brand svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0}
+.brand-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-chip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:var(--r20);padding:5px 14px 5px 5px;font-size:13px;font-weight:500;flex-shrink:0}
+.avatar{width:26px;height:26px;border-radius:50%;background:var(--g400);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.btn-out{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:var(--r8);padding:6px 12px;cursor:pointer;font-family:inherit;font-size:13px;transition:background .15s;margin-left:10px;flex-shrink:0}
+.btn-out:hover{background:rgba(255,255,255,.12)}
+@media(max-width:479px){.btn-out{display:none}}
+
+/* ── TABS ── */
+.tab-bar{background:var(--white);border-bottom:2px solid var(--s200);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{background:none;border:none;border-bottom:2.5px solid transparent;color:var(--s500);cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:600;padding:13px 18px 10px;transition:color .15s,border-color .15s;white-space:nowrap;flex-shrink:0}
+.tab-btn.active{color:var(--g600);border-bottom-color:var(--g400)}
+.tab-btn:hover:not(.active){color:var(--s700)}
+.tab-icon{display:none}
+
+/* Bottom nav on phones */
+@media(max-width:479px){
+  .tab-bar{position:fixed;bottom:0;left:0;right:0;z-index:100;border-top:1.5px solid var(--s200);border-bottom:none;padding:0;box-shadow:0 -2px 12px rgba(0,0,0,.08);justify-content:stretch}
+  .tab-btn{flex:1;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px 10px;gap:3px;font-size:10.5px;border-bottom:none;border-top:2.5px solid transparent;display:flex}
+  .tab-btn.active{border-bottom:none;border-top-color:var(--g400);color:var(--g600)}
+  .tab-icon{display:block;font-size:20px;line-height:1}
+  .main{padding-bottom:74px}
+}
+
+/* ── MAIN ── */
+.main{padding:16px;max-width:1400px;margin:0 auto}
+@media(min-width:640px){.main{padding:24px}}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── CARDS ── */
+.card{background:var(--white);border:1.5px solid var(--s200);border-radius:var(--r16);padding:18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+@media(min-width:640px){.card{padding:24px;margin-bottom:20px}}
+.card-title{font-size:11px;font-weight:700;color:var(--s400);text-transform:uppercase;letter-spacing:.09em;margin-bottom:16px}
+
+/* ── FORM GRID ── */
+.form-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:16px}
+@media(min-width:480px){.form-grid{grid-template-columns:1fr 1fr}}
+@media(min-width:900px){.form-grid{grid-template-columns:repeat(4,1fr)}}
+.preview{background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r8);padding:13px 16px;font-size:13.5px;color:var(--g700);display:none;margin-top:4px;line-height:1.7}
+.preview.show{display:block}
+.preview strong{color:var(--g800);font-weight:700}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+@media(min-width:640px){.stats-row{gap:14px}}
+.stat{background:var(--white);border:1.5px solid var(--s200);border-radius:var(--r12);padding:14px 10px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.stat-lbl{font-size:10px;font-weight:700;color:var(--s400);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.stat-val{font-size:24px;font-weight:700;color:var(--g600);font-family:'DM Mono',monospace;line-height:1}
+@media(min-width:640px){.stat-val{font-size:30px}}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end}
+.filter-bar .fg{flex:1;min-width:140px;margin-bottom:0}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r12);border:1.5px solid var(--s200);-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13px}
+thead{background:var(--g800);color:#fff}
+thead th{padding:11px 14px;text-align:left;font-weight:600;font-size:11.5px;letter-spacing:.05em;white-space:nowrap}
+thead th.num{text-align:center}
+tbody tr{border-bottom:1px solid var(--s100)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--g50)}
+tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
+.qb{background:var(--g100);color:var(--g800);border-radius:4px;padding:3px 9px;font-weight:700;font-size:12px;font-family:'DM Mono',monospace;display:inline-block}
+.dash{color:var(--s300);text-align:center;font-size:12px}
+.mono{font-family:'DM Mono',monospace;font-size:12px;color:var(--s500)}
+.tbl-empty{padding:48px 20px;text-align:center;color:var(--s400);font-size:14px}
+.tbl-loading{padding:40px 20px;text-align:center;color:var(--s400);display:flex;flex-direction:column;align-items:center;gap:12px}
+
+/* ── SPINNER ── */
+.spin{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle}
+.spin.dk{border-color:rgba(0,0,0,.1);border-top-color:var(--s500);width:22px;height:22px;border-width:3px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── MOBILE SIGN OUT ── */
+@media(max-width:479px){
+  .mob-out{display:block;background:var(--white);border-top:1.5px solid var(--s200);padding:12px 16px}
+  .mob-out button{width:100%;background:var(--red-bg);color:var(--red);border:1.5px solid var(--red-b);border-radius:var(--r8);padding:11px;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer}
+}
+.mob-out{display:none}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-icon">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg>
+    </div>
+    <div class="login-title">Asset Manager</div>
+    <div class="login-sub">School Asset Management System</div>
+    <div class="fg"><label>Username</label>
+      <input type="text" id="lu" placeholder="Enter username" autocomplete="username" autocapitalize="none"></div>
+    <div class="fg"><label>Password</label>
+      <input type="password" id="lp" placeholder="Enter password" autocomplete="current-password"></div>
+    <div id="lm" class="msg"></div>
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="appScreen">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg>
+      <span class="brand-text">Asset Manager</span>
+    </div>
+    <div style="display:flex;align-items:center;flex-shrink:0">
+      <div class="user-chip">
+        <div class="avatar" id="uav">U</div>
+        <span id="uname" style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
+      </div>
+      <button class="btn-out" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-add" onclick="switchTab('add')">
+      <span class="tab-icon">📋</span>Add Entry
+    </button>
+    <button class="tab-btn" id="tab-view" onclick="switchTab('view')">
+      <span class="tab-icon">📊</span>Register
+    </button>
+    <button class="tab-btn" id="tab-log" onclick="switchTab('log')">
+      <span class="tab-icon">📝</span>Edit Log
+    </button>
+  </div>
+
+  <div class="main">
+
+    <!-- ADD ENTRY -->
+    <div class="tab-panel active" id="panel-add">
+      <div class="card">
+        <div class="card-title">Record Asset Entry</div>
+        <div class="form-grid">
+          <div class="fg"><label>Item Name</label>
+            <select id="eItem" onchange="onItemChange()"><option value="">— Select Item —</option></select></div>
+          <div class="fg"><label>Asset Code</label>
+            <input type="text" id="eCode" placeholder="Auto-filled" readonly></div>
+          <div class="fg"><label>Class Name</label>
+            <select id="eClass" onchange="updatePreview()"><option value="">— Select Class —</option></select></div>
+          <div class="fg"><label>Quantity</label>
+            <input type="number" id="eQty" placeholder="1" min="1" value="1" inputmode="numeric" pattern="[0-9]*" oninput="updatePreview()"></div>
+        </div>
+        <div class="preview" id="prevBox">
+          Will add <strong id="pQty">0</strong> unit(s) of
+          <strong id="pItem">—</strong> (<strong id="pCode">—</strong>)
+          to class <strong id="pClass">—</strong>.
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-p" id="submitBtn" onclick="submitEntry()">Save Entry</button>
+          <button class="btn btn-s" onclick="clearForm()">Clear</button>
+        </div>
+        <div id="sm" class="msg"></div>
+      </div>
+    </div>
+
+    <!-- ASSET REGISTER -->
+    <div class="tab-panel" id="panel-view">
+      <div class="stats-row">
+        <div class="stat"><div class="stat-lbl">Items</div><div class="stat-val" id="si">—</div></div>
+        <div class="stat"><div class="stat-lbl">Classes</div><div class="stat-val" id="sc">—</div></div>
+        <div class="stat"><div class="stat-lbl">Units</div><div class="stat-val" id="su">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Asset Register</div>
+        <div class="filter-bar">
+          <div class="fg"><label>Search</label>
+            <input type="text" id="vs" placeholder="Item name or code…" oninput="renderData()"></div>
+          <div class="fg"><label>Class</label>
+            <select id="vc" onchange="renderData()"><option value="">All Classes</option></select></div>
+          <button class="btn-icon" onclick="loadData()" title="Refresh">↻</button>
+        </div>
+        <div class="tbl-wrap" id="dataTbl">
+          <div class="tbl-loading"><span class="spin dk"></span><span>Loading…</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDIT LOG -->
+    <div class="tab-panel" id="panel-log">
+      <div class="card">
+        <div class="card-title">Edit Log</div>
+        <div class="filter-bar">
+          <div class="fg"><label>Search</label>
+            <input type="text" id="ls" placeholder="User, item, class…" oninput="renderLog()"></div>
+          <div class="fg"><label>User</label>
+            <select id="lu2" onchange="renderLog()"><option value="">All Users</option></select></div>
+          <button class="btn-icon" onclick="loadLog()" title="Refresh">↻</button>
+        </div>
+        <div class="tbl-wrap" id="logTbl">
+          <div class="tbl-loading"><span class="spin dk"></span><span>Loading…</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+  <div class="mob-out"><button onclick="doLogout()">Sign Out</button></div>
+</div><!-- /appScreen -->
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  CONFIG — your Apps Script URL (used in standalone mode)
+// ══════════════════════════════════════════════════════════
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwWIYiu9CneOFYsJ8U69VyKK85gKAD1dkFRgv07B8cQjziTv0pd2c_noeIkmQuEmMUY6Q/exec';
+
+// ══════════════════════════════════════════════════════════
+//  DETECT MODE
+//  - GAS mode:        page is served by Apps Script → use google.script.run
+//  - Standalone mode: page opened as local file or other host → use fetch
+// ══════════════════════════════════════════════════════════
+const IS_GAS = (typeof google !== 'undefined') && google.script && google.script.run;
+
+// ══════════════════════════════════════════════════════════
+//  UNIFIED API LAYER
+//  call(fn, args, onSuccess, onError)
+//  Transparently routes to google.script.run OR fetch()
+// ══════════════════════════════════════════════════════════
+function call(fn, args, onSuccess, onError) {
+  if (IS_GAS) {
+    // ── GAS mode: direct bridge, no CORS ──────────────────
+    let runner = google.script.run
+      .withSuccessHandler(onSuccess)
+      .withFailureHandler(err => onError(err.message || String(err)));
+    runner[fn](...(Array.isArray(args) ? args : [args]));
+  } else {
+    // ── Standalone mode: fetch via URL params / POST ───────
+    let p;
+    if (fn === 'validateLogin') {
+      p = fetchGet({ action: 'login', user: args[0], pass: args[1] });
+    } else if (fn === 'getDataSheetInfo') {
+      p = fetchGet({ action: 'getData' });
+    } else if (fn === 'getEditLog') {
+      p = fetchGet({ action: 'getLog' });
+    } else if (fn === 'submitEntry') {
+      p = fetchPost({ action: 'submitEntry', payload: args[0] });
+    } else {
+      onError('Unknown function: ' + fn); return;
+    }
+    p.then(onSuccess).catch(e => onError(String(e)));
+  }
+}
+
+async function fetchGet(params) {
+  const url = GAS_URL + '?' + new URLSearchParams(params);
+  const res = await fetch(url, { redirect: 'follow' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+async function fetchPost(body) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    // 'text/plain' avoids CORS preflight — GAS accepts this
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body),
+    redirect: 'follow'
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
+let currentUser = '';
+let sheetData   = { classHeaders: [], rows: [] };
+let logData     = [];
+
+// ══════════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════════
+function showMsg(id, text, type) { const e=document.getElementById(id); e.textContent=text; e.className='msg '+type; }
+function clearMsg(id)            { const e=document.getElementById(id); e.textContent=''; e.className='msg'; }
+function setBusy(id, busy, lbl) {
+  const b=document.getElementById(id);
+  b.disabled=busy;
+  b.innerHTML=busy?`<span class="spin"></span> ${lbl}…`:lbl;
+}
+
+// ══════════════════════════════════════════════════════════
+//  LOGIN / LOGOUT
+// ══════════════════════════════════════════════════════════
+function doLogin() {
+  const user = document.getElementById('lu').value.trim();
+  const pass = document.getElementById('lp').value.trim();
+  if (!user || !pass) { showMsg('lm','Please enter both username and password.','err'); return; }
+  setBusy('loginBtn', true, 'Sign In');
+  showMsg('lm','Verifying credentials…','info');
+
+  call('validateLogin', [user, pass],
+    res => {
+      setBusy('loginBtn', false, 'Sign In');
+      if (res && res.success) {
+        currentUser = res.username;
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appScreen').style.display   = 'block';
+        document.getElementById('uname').textContent = currentUser;
+        document.getElementById('uav').textContent   = currentUser.charAt(0).toUpperCase();
+        loadData(); loadLog();
+      } else {
+        showMsg('lm', (res && res.message) || 'Login failed.', 'err');
+      }
+    },
+    err => { setBusy('loginBtn', false, 'Sign In'); showMsg('lm', 'Error: ' + err, 'err'); }
+  );
+}
+
+['lu','lp'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+});
+
+function doLogout() {
+  currentUser = '';
+  document.getElementById('lu').value = '';
+  document.getElementById('lp').value = '';
+  clearMsg('lm');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appScreen').style.display   = 'none';
+}
+
+// ══════════════════════════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════════════════════════
+function switchTab(name) {
+  ['add','view','log'].forEach(t => {
+    document.getElementById('panel-'+t).classList.toggle('active', t===name);
+    document.getElementById('tab-'+t).classList.toggle('active', t===name);
+  });
+  if (name==='view') loadData();
+  if (name==='log')  loadLog();
+}
+
+// ══════════════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════════════
+function loadData() {
+  document.getElementById('dataTbl').innerHTML =
+    '<div class="tbl-loading"><span class="spin dk"></span><span>Loading data…</span></div>';
+
+  call('getDataSheetInfo', [],
+    res => {
+      if (res && res.error) {
+        document.getElementById('dataTbl').innerHTML =
+          '<div class="tbl-empty" style="color:var(--red)">'+res.error+'</div>'; return;
+      }
+      sheetData = res || { classHeaders:[], rows:[] };
+      populateDDs();
+      renderData();
+      updateStats();
+    },
+    err => {
+      document.getElementById('dataTbl').innerHTML =
+        '<div class="tbl-empty" style="color:var(--red)">Error: '+err+'</div>';
+    }
+  );
+}
+
+function updateStats() {
+  let u=0;
+  sheetData.rows.forEach(r => r.classCounts.forEach(v=>{ const n=parseFloat(v); if(!isNaN(n)) u+=n; }));
+  document.getElementById('si').textContent = sheetData.rows.length;
+  document.getElementById('sc').textContent = sheetData.classHeaders.length;
+  document.getElementById('su').textContent = u;
+}
+
+function populateDDs() {
+  const iSel = document.getElementById('eItem');
+  const curI = iSel.value;
+  iSel.innerHTML = '<option value="">— Select Item —</option>';
+  sheetData.rows.forEach(r => { if(r.itemName) iSel.appendChild(new Option(r.itemName, r.assetCode)); });
+  if(curI) iSel.value=curI;
+
+  ['eClass','vc'].forEach(id => {
+    const sel=document.getElementById(id), cur=sel.value;
+    sel.innerHTML = id==='vc'
+      ? '<option value="">All Classes</option>'
+      : '<option value="">— Select Class —</option>';
+    sheetData.classHeaders.forEach(h => sel.appendChild(new Option(h,h)));
+    if(cur) sel.value=cur;
+  });
+}
+
+function renderData() {
+  const srch = document.getElementById('vs').value.toLowerCase();
+  const fcls = document.getElementById('vc').value;
+  const { classHeaders, rows } = sheetData;
+
+  const colIdx = fcls
+    ? classHeaders.map((h,i)=>h===fcls?i:-1).filter(i=>i>=0)
+    : classHeaders.map((_,i)=>i);
+
+  const filtered = rows.filter(r =>
+    !srch || r.itemName.toLowerCase().includes(srch) || r.assetCode.toLowerCase().includes(srch));
+
+  if (!filtered.length) {
+    document.getElementById('dataTbl').innerHTML='<div class="tbl-empty">No records found.</div>'; return;
+  }
+
+  const visH = colIdx.map(i=>classHeaders[i]);
+  let html = '<table><thead><tr><th style="min-width:36px">#</th><th style="min-width:160px">Item Name</th><th style="min-width:80px">Code</th>';
+  visH.forEach(h=>{ html+=`<th class="num" style="min-width:80px">${h}</th>`; });
+  html += '</tr></thead><tbody>';
+
+  filtered.forEach((r,ri)=>{
+    html += `<tr><td class="mono">${r.slNo||ri+1}</td><td style="font-weight:600">${r.itemName}</td><td class="mono">${r.assetCode}</td>`;
+    colIdx.forEach(ci=>{
+      const v=r.classCounts[ci], n=parseFloat(v);
+      html += (!isNaN(n)&&n>0)
+        ? `<td style="text-align:center"><span class="qb">${n}</span></td>`
+        : `<td class="dash">—</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('dataTbl').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════
+//  LOG
+// ══════════════════════════════════════════════════════════
+function loadLog() {
+  document.getElementById('logTbl').innerHTML =
+    '<div class="tbl-loading"><span class="spin dk"></span><span>Loading log…</span></div>';
+
+  call('getEditLog', [],
+    res => {
+      logData = Array.isArray(res) ? res : [];
+      const users = [...new Set(logData.map(r=>r['USER NAME']).filter(Boolean))];
+      const sel=document.getElementById('lu2'), cur=sel.value;
+      sel.innerHTML='<option value="">All Users</option>';
+      users.forEach(u=>sel.appendChild(new Option(u,u)));
+      if(cur) sel.value=cur;
+      renderLog();
+    },
+    err => {
+      document.getElementById('logTbl').innerHTML =
+        '<div class="tbl-empty" style="color:var(--red)">Error: '+err+'</div>';
+    }
+  );
+}
+
+function renderLog() {
+  const srch = document.getElementById('ls').value.toLowerCase();
+  const usr  = document.getElementById('lu2').value;
+  const filtered = logData.filter(r =>
+    (!usr||r['USER NAME']===usr) &&
+    (!srch||Object.values(r).some(v=>String(v).toLowerCase().includes(srch))));
+
+  if (!filtered.length) {
+    document.getElementById('logTbl').innerHTML='<div class="tbl-empty">No log entries found.</div>'; return;
+  }
+
+  const cols=['USER NAME','ITEM NAME','ASSET CLASSIFICATION CODE','CLASS NAME','QTY','TIMESTAMP'];
+  let html='<table><thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>';
+  filtered.forEach(r=>{
+    html+='<tr>'+cols.map(c=>{
+      if(c==='QTY')       return `<td style="text-align:center"><span class="qb">${r[c]}</span></td>`;
+      if(c==='TIMESTAMP') return `<td class="mono" style="white-space:nowrap">${r[c]}</td>`;
+      return `<td>${r[c]||'—'}</td>`;
+    }).join('')+'</tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('logTbl').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════
+//  ENTRY FORM
+// ══════════════════════════════════════════════════════════
+function onItemChange() {
+  const sel=document.getElementById('eItem');
+  document.getElementById('eCode').value=sel.value;
+  updatePreview();
+}
+
+function updatePreview() {
+  const sel=document.getElementById('eItem');
+  const item=sel.options[sel.selectedIndex]?.text||'';
+  const code=document.getElementById('eCode').value;
+  const cls=document.getElementById('eClass').value;
+  const qty=parseInt(document.getElementById('eQty').value,10);
+  const box=document.getElementById('prevBox');
+  if(item&&item!=='— Select Item —'&&cls&&qty>0){
+    document.getElementById('pItem').textContent=item;
+    document.getElementById('pCode').textContent=code;
+    document.getElementById('pClass').textContent=cls;
+    document.getElementById('pQty').textContent=qty;
+    box.classList.add('show');
+  } else {
+    box.classList.remove('show');
+  }
+}
+
+function submitEntry() {
+  clearMsg('sm');
+  const iSel=document.getElementById('eItem');
+  const itemName=iSel.options[iSel.selectedIndex]?.text||'';
+  const assetCode=document.getElementById('eCode').value.trim();
+  const className=document.getElementById('eClass').value.trim();
+  const qty=parseInt(document.getElementById('eQty').value,10);
+
+  if(!itemName||itemName==='— Select Item —'){showMsg('sm','Please select an item.','err');return}
+  if(!assetCode){showMsg('sm','Asset code is missing.','err');return}
+  if(!className){showMsg('sm','Please select a class.','err');return}
+  if(isNaN(qty)||qty<1){showMsg('sm','Enter a valid quantity (min 1).','err');return}
+
+  setBusy('submitBtn',true,'Save Entry');
+
+  call('submitEntry',
+    [{ username:currentUser, itemName, assetCode, className, qty }],
+    res => {
+      setBusy('submitBtn',false,'Save Entry');
+      if(res&&res.success){ showMsg('sm','✓ '+res.message,'ok'); clearForm(); loadData(); }
+      else showMsg('sm',(res&&res.message)||'Save failed.','err');
+    },
+    err => { setBusy('submitBtn',false,'Save Entry'); showMsg('sm','Error: '+err,'err'); }
+  );
+}
+
+function clearForm() {
+  document.getElementById('eItem').value='';
+  document.getElementById('eCode').value='';
+  document.getElementById('eClass').value='';
+  document.getElementById('eQty').value='1';
+  document.getElementById('prevBox').classList.remove('show');
+  clearMsg('sm');
+}
+</script>
+</body>
+</html>
