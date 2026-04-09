@@ -216,6 +216,7 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
           Will add <strong id="pQty">0</strong> unit(s) of
           <strong id="pItem">—</strong> (<strong id="pCode">—</strong>)
           to class <strong id="pClass">—</strong>.
+          <div id="pPrev" style="margin-top:6px;font-size:0.88em;opacity:0.75"></div>
         </div>
         <div class="btn-row">
           <button class="btn btn-p" id="submitBtn" onclick="submitEntry()">Save Entry</button>
@@ -303,7 +304,8 @@ function call(fn, args, onSuccess, onError) {
     } else if (fn === 'getEditLog') {
       p = fetchGet({ action: 'getLog' });
     } else if (fn === 'submitEntry') {
-      p = fetchPost({ action: 'submitEntry', payload: args[0] });
+      const { username, itemName, assetCode, className, qty } = args[0];
+      p = fetchGet({ action: 'submit', username, itemName, assetCode, className, qty });
     } else {
       onError('Unknown function: ' + fn); return;
     }
@@ -368,6 +370,7 @@ function doLogin() {
         document.getElementById('uname').textContent = currentUser;
         document.getElementById('uav').textContent   = currentUser.charAt(0).toUpperCase();
         loadData(); loadLog();
+        startAutoRefresh();
       } else {
         showMsg('lm', (res && res.message) || 'Login failed.', 'err');
       }
@@ -381,12 +384,67 @@ function doLogin() {
 });
 
 function doLogout() {
+  stopAutoRefresh();
   currentUser = '';
   document.getElementById('lu').value = '';
   document.getElementById('lp').value = '';
   clearMsg('lm');
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('appScreen').style.display   = 'none';
+}
+
+let autoRefreshInterval = null;
+
+function silentLoadData() {
+  call('getDataSheetInfo', [],
+    res => {
+      if (!res || res.error) return;
+      const newKey = JSON.stringify(res);
+      const oldKey = JSON.stringify(sheetData);
+      if (newKey === oldKey) return;
+      sheetData = res;
+      populateDDs();
+      renderData();
+      updateStats();
+    },
+    () => {}
+  );
+}
+
+function silentLoadLog() {
+  call('getEditLog', [],
+    res => {
+      const incoming = (Array.isArray(res) ? res : []).map(r =>
+        Object.fromEntries(Object.entries(r).map(([k, v]) => [k.toUpperCase(), v]))
+      );
+      if (JSON.stringify(incoming) === JSON.stringify(logData)) return;
+      logData = incoming;
+      const users = [...new Set(logData.map(r => r['USER NAME']).filter(Boolean))];
+      const sel = document.getElementById('lu2'), cur = sel.value;
+      sel.innerHTML = '<option value="">All Users</option>';
+      users.forEach(u => sel.appendChild(new Option(u, u)));
+      if (cur) sel.value = cur;
+      renderLog();
+    },
+    () => {}
+  );
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  autoRefreshInterval = setInterval(() => {
+    const viewTab = document.getElementById('panel-view')?.classList.contains('active');
+    const logTab  = document.getElementById('panel-log')?.classList.contains('active');
+    if (viewTab) silentLoadData();
+    if (logTab)  silentLoadLog();
+  }, 500);
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+    autoRefreshInterval = null;
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -495,7 +553,9 @@ function loadLog() {
 
   call('getEditLog', [],
     res => {
-      logData = Array.isArray(res) ? res : [];
+      logData = (Array.isArray(res) ? res : []).map(r =>
+        Object.fromEntries(Object.entries(r).map(([k, v]) => [k.toUpperCase(), v]))
+      );
       const users = [...new Set(logData.map(r=>r['USER NAME']).filter(Boolean))];
       const sel=document.getElementById('lu2'), cur=sel.value;
       sel.innerHTML='<option value="">All Users</option>';
@@ -526,7 +586,7 @@ function renderLog() {
   filtered.forEach(r=>{
     html+='<tr>'+cols.map(c=>{
       if(c==='QTY')       return `<td style="text-align:center"><span class="qb">${r[c]}</span></td>`;
-      if(c==='TIMESTAMP') return `<td class="mono" style="white-space:nowrap">${r[c]}</td>`;
+      if(c==='TIMESTAMP') return `<td class="mono" style="white-space:nowrap">${r[c]||'—'}</td>`;
       return `<td>${r[c]||'—'}</td>`;
     }).join('')+'</tr>';
   });
@@ -555,6 +615,15 @@ function updatePreview() {
     document.getElementById('pCode').textContent=code;
     document.getElementById('pClass').textContent=cls;
     document.getElementById('pQty').textContent=qty;
+
+    const prevTotal = logData
+      .filter(r => r['ASSET CLASSIFICATION CODE']===code && r['CLASS NAME']===cls)
+      .reduce((sum, r) => sum + (parseFloat(r['QTY'])||0), 0);
+    const prevEl = document.getElementById('pPrev');
+    prevEl.textContent = prevTotal > 0
+      ? 'Previously recorded: ' + prevTotal + ' unit(s) in this class'
+      : 'No previous entries for this item in this class';
+
     box.classList.add('show');
   } else {
     box.classList.remove('show');
