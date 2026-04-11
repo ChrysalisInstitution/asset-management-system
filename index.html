@@ -245,6 +245,7 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
           <button class="btn btn-warn" id="lockClassBtn" onclick="doLockClass()" title="Lock class so it cannot be changed accidentally">&#128274; Submit Class</button>
           <button class="btn btn-danger" id="unlockClassBtn" onclick="doUnlockClass()" style="display:none" title="Unlock class (Kush / Darsh only)">&#128275; Unlock Class</button>
         </div>
+        <div id="lockInfo" style="font-size:12px;color:var(--amber);font-weight:600;margin-bottom:10px;margin-top:-6px;min-height:16px"></div>
 
         <!-- 2. ITEM NAME (searchable) + Code + Qty -->
         <div class="entry-grid">
@@ -365,6 +366,14 @@ function call(fn, args, onSuccess, onError) {
     } else if (fn === 'submitEntry') {
       const { username, itemName, assetCode, className, qty } = args[0];
       p = fetchGet({ action: 'submit', username, itemName, assetCode, className, qty });
+    } else if (fn === 'getLockedClasses') {
+      p = fetchGet({ action: 'getLockedClasses' });
+    } else if (fn === 'lockClass') {
+      const { className, lockedBy, timestamp } = args[0];
+      p = fetchGet({ action: 'lockClass', className, lockedBy, timestamp });
+    } else if (fn === 'unlockClass') {
+      const { className } = args[0];
+      p = fetchGet({ action: 'unlockClass', className });
     } else {
       onError('Unknown function: ' + fn); return;
     }
@@ -386,7 +395,7 @@ let currentUser = '';
 let sheetData   = { classHeaders: [], rows: [] };
 let logData     = [];
 let itemMap     = {}; // itemName → assetCode
-let lockedClasses = new Set(); // per-class lock, not global
+let lockedClasses = new Map(); // className → { lockedBy, timestamp }
 
 // ══════════════════════════════════════════════════════════
 //  UTILS
@@ -429,8 +438,21 @@ function loginAs(username) {
   document.getElementById('appScreen').style.display   = 'block';
   document.getElementById('uname').textContent = currentUser;
   document.getElementById('uav').textContent   = currentUser.charAt(0).toUpperCase();
-  loadData(); loadLog();
-  startAutoRefresh();
+  // Fetch persisted locks first, then load everything
+  loadLockedClasses(() => { loadData(); loadLog(); startAutoRefresh(); });
+}
+
+function loadLockedClasses(callback) {
+  call('getLockedClasses', [],
+    res => {
+      lockedClasses = new Map();
+      (Array.isArray(res) ? res : []).forEach(r => {
+        if (r.className) lockedClasses.set(r.className, { lockedBy: r.lockedBy || '', timestamp: r.timestamp || '' });
+      });
+      if (callback) callback();
+    },
+    () => { if (callback) callback(); } // fail silently, don't block login
+  );
 }
 
 ['lu','lp'].forEach(id => {
@@ -484,6 +506,22 @@ function silentLoadData() {
   );
 }
 
+function silentLoadLocks() {
+  call('getLockedClasses', [],
+    res => {
+      const incoming = new Map();
+      (Array.isArray(res) ? res : []).forEach(r => {
+        if (r.className) incoming.set(r.className, { lockedBy: r.lockedBy || '', timestamp: r.timestamp || '' });
+      });
+      // Only update UI if locks changed
+      if (JSON.stringify([...incoming]) === JSON.stringify([...lockedClasses])) return;
+      lockedClasses = incoming;
+      applyClassLockState(); // re-apply to current class
+    },
+    () => {}
+  );
+}
+
 function silentLoadLog() {
   call('getEditLog', [],
     res => {
@@ -508,9 +546,11 @@ function startAutoRefresh() {
   autoRefreshInterval = setInterval(() => {
     const viewTab = document.getElementById('panel-view')?.classList.contains('active');
     const logTab  = document.getElementById('panel-log')?.classList.contains('active');
+    const addTab  = document.getElementById('panel-add')?.classList.contains('active');
     if (viewTab) silentLoadData();
     if (logTab)  silentLoadLog();
-  }, 5000); // 5 s — stable, won't cause hangs
+    if (addTab)  silentLoadLocks(); // keep lock state fresh for all users
+  }, 5000);
 }
 
 function stopAutoRefresh() {
@@ -525,6 +565,7 @@ function switchTab(name) {
     document.getElementById('panel-'+t).classList.toggle('active', t===name);
     document.getElementById('tab-'+t).classList.toggle('active', t===name);
   });
+  if (name==='add')  { silentLoadLocks(); }
   if (name==='view') loadData();
   if (name==='log')  loadLog();
 }
@@ -547,7 +588,8 @@ function loadData() {
       renderData();
       updateStats();
       updateClassRef();
-      updatePreview(); // refresh preview counts after data reload
+      applyClassLockState(); // restore lock UI for current class after reload
+      updatePreview();
     },
     err => {
       document.getElementById('dataTbl').innerHTML =
@@ -652,10 +694,18 @@ function updateClassRef() {
 function doLockClass() {
   const cls = document.getElementById('eClass').value;
   if (!cls) return;
-  lockedClasses.add(cls);
-  updateLockUI(cls);
-  document.getElementById('submitBtn').disabled = true;
-  showMsg('sm', `"${cls}" locked. Only Kush or Darsh can add entries to it now.`, 'info');
+  const timestamp = new Date().toLocaleString();
+  setBusy('lockClassBtn', true, '&#128274; Submit Class');
+  call('lockClass', [{ className: cls, lockedBy: currentUser, timestamp }],
+    () => {
+      lockedClasses.set(cls, { lockedBy: currentUser, timestamp });
+      setBusy('lockClassBtn', false, '&#128274; Submit Class');
+      updateLockUI(cls);
+      document.getElementById('submitBtn').disabled = true;
+      showMsg('sm', `"${cls}" locked by ${currentUser} at ${timestamp}. Only Kush or Darsh can unlock.`, 'info');
+    },
+    err => { setBusy('lockClassBtn', false, '&#128274; Submit Class'); showMsg('sm', 'Lock failed: ' + err, 'err'); }
+  );
 }
 
 function doUnlockClass() {
@@ -664,16 +714,41 @@ function doUnlockClass() {
     return;
   }
   const cls = document.getElementById('eClass').value;
-  lockedClasses.delete(cls);
+  setBusy('unlockClassBtn', true, '&#128275; Unlock Class');
+  call('unlockClass', [{ className: cls }],
+    () => {
+      lockedClasses.delete(cls);
+      setBusy('unlockClassBtn', false, '&#128275; Unlock Class');
+      updateLockUI(cls);
+      document.getElementById('submitBtn').disabled = false;
+      clearMsg('sm');
+    },
+    err => { setBusy('unlockClassBtn', false, '&#128275; Unlock Class'); showMsg('sm', 'Unlock failed: ' + err, 'err'); }
+  );
+}
+
+// Apply lock state for whatever class is currently selected in the dropdown
+function applyClassLockState() {
+  const cls    = document.getElementById('eClass').value;
+  const locked = lockedClasses.has(cls);
   updateLockUI(cls);
-  document.getElementById('submitBtn').disabled = false;
-  clearMsg('sm');
+  document.getElementById('submitBtn').disabled = locked;
+  if (cls && locked) {
+    const info = lockedClasses.get(cls);
+    showMsg('sm', `"${cls}" is locked by ${info.lockedBy}. Only Kush or Darsh can unlock.`, 'info');
+  } else {
+    clearMsg('sm');
+  }
 }
 
 function updateLockUI(cls) {
   const locked = lockedClasses.has(cls);
   document.getElementById('lockClassBtn').style.display   = (cls && !locked) ? '' : 'none';
   document.getElementById('unlockClassBtn').style.display = (cls && locked)  ? '' : 'none';
+  // Show who locked it
+  const info = locked ? lockedClasses.get(cls) : null;
+  const lockInfoEl = document.getElementById('lockInfo');
+  if (lockInfoEl) lockInfoEl.textContent = info ? `Locked by ${info.lockedBy} · ${info.timestamp}` : '';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -809,12 +884,7 @@ document.addEventListener('mousedown', csClose);
 document.addEventListener('touchstart', csClose);
 
 function onClassChange() {
-  const cls = document.getElementById('eClass').value;
-  const locked = lockedClasses.has(cls);
-  updateLockUI(cls);
-  document.getElementById('submitBtn').disabled = locked;
-  if (locked) showMsg('sm', `"${cls}" is locked. Only Kush or Darsh can add entries.`, 'info');
-  else clearMsg('sm');
+  applyClassLockState();
   updateClassRef();
   updatePreview();
 }
