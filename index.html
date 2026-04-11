@@ -30,11 +30,12 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--s100);color:var
 .login-sub{font-size:13.5px;color:var(--s500);margin-bottom:28px}
 
 /* ── FORM ── */
-.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:0}
 label{font-size:11.5px;font-weight:700;color:var(--s600);text-transform:uppercase;letter-spacing:.07em}
 input,select{border:1.5px solid var(--s300);border-radius:var(--r8);padding:12px 14px;font-family:inherit;font-size:15px;color:var(--s800);background:var(--s50);outline:none;transition:border-color .15s,background .15s,box-shadow .15s;appearance:none;-webkit-appearance:none;width:100%}
 input:focus,select:focus{border-color:var(--g400);background:var(--white);box-shadow:0 0 0 3px rgba(46,158,106,.14)}
 input[readonly]{background:var(--s100);color:var(--s500);cursor:default}
+select:disabled,input:disabled{background:var(--s100);color:var(--s500);cursor:not-allowed;opacity:.75}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1.5l6 6 6-6' stroke='%2394a3b8' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:40px;cursor:pointer}
 
 /* ── BUTTONS ── */
@@ -45,6 +46,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .btn-p:disabled{background:var(--s300);color:var(--s400);cursor:not-allowed;transform:none}
 .btn-s{background:var(--s200);color:var(--s700);border:1.5px solid var(--s300)}
 .btn-s:hover{background:var(--s300)}
+.btn-warn{background:var(--amber-bg);color:var(--amber);border:1.5px solid var(--amber-b)}
+.btn-warn:hover{background:var(--amber-b)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1.5px solid var(--red-b)}
+.btn-danger:hover{background:var(--red-b)}
 .btn-login{width:100%;background:linear-gradient(135deg,var(--g500),var(--g700));color:#fff;border:none;border-radius:var(--r12);padding:14px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;transition:all .2s;box-shadow:0 4px 14px rgba(26,110,73,.35)}
 .btn-login:hover{background:linear-gradient(135deg,var(--g400),var(--g600))}
 .btn-login:active{transform:scale(.98)}
@@ -69,7 +74,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .avatar{width:26px;height:26px;border-radius:50%;background:var(--g400);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
 .btn-out{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:var(--r8);padding:6px 12px;cursor:pointer;font-family:inherit;font-size:13px;transition:background .15s;margin-left:10px;flex-shrink:0}
 .btn-out:hover{background:rgba(255,255,255,.12)}
-@media(max-width:479px){.btn-out{display:none}}
 
 /* ── TABS ── */
 .tab-bar{background:var(--white);border-bottom:2px solid var(--s200);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -78,15 +82,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .tab-btn.active{color:var(--g600);border-bottom-color:var(--g400)}
 .tab-btn:hover:not(.active){color:var(--s700)}
 .tab-icon{display:none}
-
-/* Bottom nav on phones */
-@media(max-width:479px){
-  .tab-bar{position:fixed;bottom:0;left:0;right:0;z-index:100;border-top:1.5px solid var(--s200);border-bottom:none;padding:0;box-shadow:0 -2px 12px rgba(0,0,0,.08);justify-content:stretch}
-  .tab-btn{flex:1;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px 10px;gap:3px;font-size:10.5px;border-bottom:none;border-top:2.5px solid transparent;display:flex}
-  .tab-btn.active{border-bottom:none;border-top-color:var(--g400);color:var(--g600)}
-  .tab-icon{display:block;font-size:20px;line-height:1}
-  .main{padding-bottom:74px}
-}
 
 /* ── MAIN ── */
 .main{padding:16px;max-width:1400px;margin:0 auto}
@@ -103,6 +98,25 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .form-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:16px}
 @media(min-width:480px){.form-grid{grid-template-columns:1fr 1fr}}
 @media(min-width:900px){.form-grid{grid-template-columns:repeat(4,1fr)}}
+
+/* Add-Entry layout */
+.class-row{display:flex;gap:10px;align-items:flex-end;margin-bottom:14px;flex-wrap:wrap}
+.class-row .fg{flex:1;min-width:160px}
+.entry-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:16px}
+@media(min-width:480px){.entry-grid{grid-template-columns:1fr 1fr}}
+@media(min-width:900px){.entry-grid{grid-template-columns:2fr 1fr 1fr}}
+
+/* ── CLASS REFERENCE PANEL ── */
+.class-ref{background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r8);padding:12px 14px;margin-bottom:14px;display:none}
+.class-ref-title{font-size:11px;font-weight:700;color:var(--g700);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.class-ref table{width:100%;font-size:12.5px;border-collapse:collapse}
+.class-ref thead{background:transparent;color:inherit}
+.class-ref thead th{text-align:left;padding:4px 8px 6px;color:var(--g700);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--g200)}
+.class-ref tbody td{padding:5px 8px;color:var(--s700)}
+.class-ref tbody tr:hover td{background:rgba(46,158,106,.07)}
+.class-ref .no-items{color:var(--s400);font-size:13px;font-style:italic}
+
+/* ── PREVIEW ── */
 .preview{background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r8);padding:13px 16px;font-size:13.5px;color:var(--g700);display:none;margin-top:4px;line-height:1.7}
 .preview.show{display:block}
 .preview strong{color:var(--g800);font-weight:700}
@@ -118,7 +132,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 /* ── FILTER BAR ── */
 .filter-bar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end}
-.filter-bar .fg{flex:1;min-width:140px;margin-bottom:0}
+.filter-bar .fg{flex:1;min-width:140px}
 
 /* ── TABLE ── */
 .tbl-wrap{overflow-x:auto;border-radius:var(--r12);border:1.5px solid var(--s200);-webkit-overflow-scrolling:touch}
@@ -141,12 +155,20 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
 .spin.dk{border-color:rgba(0,0,0,.1);border-top-color:var(--s500);width:22px;height:22px;border-width:3px}
 @keyframes sp{to{transform:rotate(360deg)}}
 
-/* ── MOBILE SIGN OUT ── */
+/* ── MOBILE SIGN OUT — must come before the media query ── */
+.mob-out{display:none}
+
+/* ── MOBILE ── */
 @media(max-width:479px){
+  .tab-bar{position:fixed;bottom:0;left:0;right:0;z-index:100;border-top:1.5px solid var(--s200);border-bottom:none;padding:0;box-shadow:0 -2px 12px rgba(0,0,0,.08);justify-content:stretch}
+  .tab-btn{flex:1;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px 10px;gap:3px;font-size:10.5px;border-bottom:none;border-top:2.5px solid transparent;display:flex}
+  .tab-btn.active{border-bottom:none;border-top-color:var(--g400);color:var(--g600)}
+  .tab-icon{display:block;font-size:20px;line-height:1}
+  .main{padding-bottom:74px}
+  .btn-out{display:none}
   .mob-out{display:block;background:var(--white);border-top:1.5px solid var(--s200);padding:12px 16px}
   .mob-out button{width:100%;background:var(--red-bg);color:var(--red);border:1.5px solid var(--red-b);border-radius:var(--r8);padding:11px;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer}
 }
-.mob-out{display:none}
 </style>
 </head>
 <body>
@@ -159,9 +181,9 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
     </div>
     <div class="login-title">Asset Manager</div>
     <div class="login-sub">School Asset Management System</div>
-    <div class="fg"><label>Username</label>
+    <div class="fg" style="margin-bottom:14px"><label>Username</label>
       <input type="text" id="lu" placeholder="Enter username" autocomplete="username" autocapitalize="none"></div>
-    <div class="fg"><label>Password</label>
+    <div class="fg" style="margin-bottom:14px"><label>Password</label>
       <input type="password" id="lp" placeholder="Enter password" autocomplete="current-password"></div>
     <div id="lm" class="msg"></div>
     <button class="btn-login" id="loginBtn" onclick="doLogin()">Sign In</button>
@@ -202,21 +224,45 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
     <div class="tab-panel active" id="panel-add">
       <div class="card">
         <div class="card-title">Record Asset Entry</div>
-        <div class="form-grid">
-          <div class="fg"><label>Item Name</label>
-            <select id="eItem" onchange="onItemChange()"><option value="">— Select Item —</option></select></div>
-          <div class="fg"><label>Asset Code</label>
-            <input type="text" id="eCode" placeholder="Auto-filled" readonly></div>
-          <div class="fg"><label>Class Name</label>
-            <select id="eClass" onchange="updatePreview()"><option value="">— Select Class —</option></select></div>
-          <div class="fg"><label>Quantity</label>
-            <input type="number" id="eQty" placeholder="1" min="1" value="1" inputmode="numeric" pattern="[0-9]*" oninput="updatePreview()"></div>
+
+        <!-- 1. CLASS NAME — top, sticky with lock -->
+        <div class="class-row">
+          <div class="fg">
+            <label>Class Name</label>
+            <select id="eClass" onchange="onClassChange()"><option value="">— Select Class —</option></select>
+          </div>
+          <button class="btn btn-warn" id="lockClassBtn" onclick="doLockClass()" title="Lock class so it cannot be changed accidentally">&#128274; Submit Class</button>
+          <button class="btn btn-danger" id="unlockClassBtn" onclick="doUnlockClass()" style="display:none" title="Unlock class (Kush / Darsh only)">&#128275; Unlock Class</button>
         </div>
+
+        <!-- 2. ITEM NAME (searchable) + Code + Qty -->
+        <div class="entry-grid">
+          <div class="fg">
+            <label>Item Name</label>
+            <input type="text" id="eItemSearch" list="eItemList" placeholder="Type to search or select…" oninput="onItemSearch()" autocomplete="off">
+            <datalist id="eItemList"></datalist>
+          </div>
+          <div class="fg">
+            <label>Asset Code</label>
+            <input type="text" id="eCode" placeholder="Auto-filled" readonly>
+          </div>
+          <div class="fg">
+            <label>Quantity</label>
+            <input type="number" id="eQty" placeholder="1" value="1" oninput="updatePreview()">
+          </div>
+        </div>
+
+        <!-- 3. Items already recorded in this class (reference panel) -->
+        <div class="class-ref" id="classRef">
+          <div class="class-ref-title">Already recorded in this class</div>
+          <div id="classRefBody"></div>
+        </div>
+
         <div class="preview" id="prevBox">
-          Will add <strong id="pQty">0</strong> unit(s) of
+          <span id="pVerb">Will add</span> <strong id="pQty">0</strong> unit(s) of
           <strong id="pItem">—</strong> (<strong id="pCode">—</strong>)
-          to class <strong id="pClass">—</strong>.
-          <div id="pPrev" style="margin-top:6px;font-size:0.88em;opacity:0.75"></div>
+          <span id="pPrep">to</span> class <strong id="pClass">—</strong>.
+          <div id="pPrev" style="margin-top:6px;font-size:0.88em;opacity:0.8"></div>
         </div>
         <div class="btn-row">
           <button class="btn btn-p" id="submitBtn" onclick="submitEntry()">Save Entry</button>
@@ -240,7 +286,7 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
             <input type="text" id="vs" placeholder="Item name or code…" oninput="renderData()"></div>
           <div class="fg"><label>Class</label>
             <select id="vc" onchange="renderData()"><option value="">All Classes</option></select></div>
-          <button class="btn-icon" onclick="loadData()" title="Refresh">↻</button>
+          <button class="btn-icon" onclick="loadData()" title="Refresh">&#8635;</button>
         </div>
         <div class="tbl-wrap" id="dataTbl">
           <div class="tbl-loading"><span class="spin dk"></span><span>Loading…</span></div>
@@ -257,7 +303,8 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
             <input type="text" id="ls" placeholder="User, item, class…" oninput="renderLog()"></div>
           <div class="fg"><label>User</label>
             <select id="lu2" onchange="renderLog()"><option value="">All Users</option></select></div>
-          <button class="btn-icon" onclick="loadLog()" title="Refresh">↻</button>
+          <button class="btn-icon" onclick="loadLog()" title="Refresh">&#8635;</button>
+          <button class="btn btn-s" onclick="downloadExcel()" style="padding:0 14px;height:36px;font-size:13.5px">&#11015; Excel</button>
         </div>
         <div class="tbl-wrap" id="logTbl">
           <div class="tbl-loading"><span class="spin dk"></span><span>Loading…</span></div>
@@ -269,33 +316,29 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
   <div class="mob-out"><button onclick="doLogout()">Sign Out</button></div>
 </div><!-- /appScreen -->
 
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════
-//  CONFIG — your Apps Script URL (used in standalone mode)
+//  CONFIG
 // ══════════════════════════════════════════════════════════
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwWIYiu9CneOFYsJ8U69VyKK85gKAD1dkFRgv07B8cQjziTv0pd2c_noeIkmQuEmMUY6Q/exec';
+const GAS_URL     = 'https://script.google.com/macros/s/AKfycbwWIYiu9CneOFYsJ8U69VyKK85gKAD1dkFRgv07B8cQjziTv0pd2c_noeIkmQuEmMUY6Q/exec';
+const ADMIN_USERS = ['Kush', 'Darsh']; // only these login IDs can unlock the class
 
 // ══════════════════════════════════════════════════════════
 //  DETECT MODE
-//  - GAS mode:        page is served by Apps Script → use google.script.run
-//  - Standalone mode: page opened as local file or other host → use fetch
 // ══════════════════════════════════════════════════════════
 const IS_GAS = (typeof google !== 'undefined') && google.script && google.script.run;
 
 // ══════════════════════════════════════════════════════════
 //  UNIFIED API LAYER
-//  call(fn, args, onSuccess, onError)
-//  Transparently routes to google.script.run OR fetch()
 // ══════════════════════════════════════════════════════════
 function call(fn, args, onSuccess, onError) {
   if (IS_GAS) {
-    // ── GAS mode: direct bridge, no CORS ──────────────────
     let runner = google.script.run
       .withSuccessHandler(onSuccess)
       .withFailureHandler(err => onError(err.message || String(err)));
     runner[fn](...(Array.isArray(args) ? args : [args]));
   } else {
-    // ── Standalone mode: fetch via URL params / POST ───────
     let p;
     if (fn === 'validateLogin') {
       p = fetchGet({ action: 'login', user: args[0], pass: args[1] });
@@ -320,24 +363,14 @@ async function fetchGet(params) {
   return res.json();
 }
 
-async function fetchPost(body) {
-  const res = await fetch(GAS_URL, {
-    method: 'POST',
-    // 'text/plain' avoids CORS preflight — GAS accepts this
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body),
-    redirect: 'follow'
-  });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
-}
-
 // ══════════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════════
 let currentUser = '';
 let sheetData   = { classHeaders: [], rows: [] };
 let logData     = [];
+let itemMap     = {}; // itemName → assetCode
+let lockedClasses = new Set(); // per-class lock, not global
 
 // ══════════════════════════════════════════════════════════
 //  UTILS
@@ -364,13 +397,7 @@ function doLogin() {
     res => {
       setBusy('loginBtn', false, 'Sign In');
       if (res && res.success) {
-        currentUser = res.username;
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appScreen').style.display   = 'block';
-        document.getElementById('uname').textContent = currentUser;
-        document.getElementById('uav').textContent   = currentUser.charAt(0).toUpperCase();
-        loadData(); loadLog();
-        startAutoRefresh();
+        loginAs(res.username);
       } else {
         showMsg('lm', (res && res.message) || 'Login failed.', 'err');
       }
@@ -379,33 +406,63 @@ function doLogin() {
   );
 }
 
+function loginAs(username) {
+  currentUser = username;
+  store.setItem('assetMgrUser', username);
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display   = 'block';
+  document.getElementById('uname').textContent = currentUser;
+  document.getElementById('uav').textContent   = currentUser.charAt(0).toUpperCase();
+  loadData(); loadLog();
+  startAutoRefresh();
+}
+
 ['lu','lp'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 });
 
 function doLogout() {
   stopAutoRefresh();
-  currentUser = '';
+  store.removeItem('assetMgrUser');
+  currentUser  = '';
+  lockedClasses.clear();
   document.getElementById('lu').value = '';
   document.getElementById('lp').value = '';
   clearMsg('lm');
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('appScreen').style.display   = 'none';
+  // Reset lock UI
+  updateLockUI('');
 }
 
+// ── Safe storage wrapper (falls back to in-memory when localStorage is blocked) ──
+const store = (() => {
+  const mem = {};
+  try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return localStorage; }
+  catch(e) { return { getItem: k=>mem[k]||null, setItem:(k,v)=>{ mem[k]=v; }, removeItem: k=>{ delete mem[k]; } }; }
+})();
+
+// Restore session on page load (no logout on refresh)
+window.addEventListener('load', () => {
+  const saved = store.getItem('assetMgrUser');
+  if (saved) loginAs(saved);
+});
+
+// ══════════════════════════════════════════════════════════
+//  AUTO REFRESH — only active tab, 5 s interval to avoid hangs
+// ══════════════════════════════════════════════════════════
 let autoRefreshInterval = null;
 
 function silentLoadData() {
   call('getDataSheetInfo', [],
     res => {
       if (!res || res.error) return;
-      const newKey = JSON.stringify(res);
-      const oldKey = JSON.stringify(sheetData);
-      if (newKey === oldKey) return;
+      if (JSON.stringify(res) === JSON.stringify(sheetData)) return;
       sheetData = res;
       populateDDs();
       renderData();
       updateStats();
+      updateClassRef();
     },
     () => {}
   );
@@ -437,14 +494,11 @@ function startAutoRefresh() {
     const logTab  = document.getElementById('panel-log')?.classList.contains('active');
     if (viewTab) silentLoadData();
     if (logTab)  silentLoadLog();
-  }, 500);
+  }, 5000); // 5 s — stable, won't cause hangs
 }
 
 function stopAutoRefresh() {
-  if (autoRefreshInterval) {
-    clearInterval(autoRefreshInterval);
-    autoRefreshInterval = null;
-  }
+  if (autoRefreshInterval) { clearInterval(autoRefreshInterval); autoRefreshInterval = null; }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -476,6 +530,8 @@ function loadData() {
       populateDDs();
       renderData();
       updateStats();
+      updateClassRef();
+      updatePreview(); // refresh preview counts after data reload
     },
     err => {
       document.getElementById('dataTbl').innerHTML =
@@ -493,12 +549,20 @@ function updateStats() {
 }
 
 function populateDDs() {
-  const iSel = document.getElementById('eItem');
-  const curI = iSel.value;
-  iSel.innerHTML = '<option value="">— Select Item —</option>';
-  sheetData.rows.forEach(r => { if(r.itemName) iSel.appendChild(new Option(r.itemName, r.assetCode)); });
-  if(curI) iSel.value=curI;
+  // Item datalist for searchable input
+  const dl = document.getElementById('eItemList');
+  dl.innerHTML = '';
+  itemMap = {};
+  sheetData.rows.forEach(r => {
+    if (r.itemName) {
+      itemMap[r.itemName] = r.assetCode;
+      const opt = document.createElement('option');
+      opt.value = r.itemName;
+      dl.appendChild(opt);
+    }
+  });
 
+  // Class dropdowns
   ['eClass','vc'].forEach(id => {
     const sel=document.getElementById(id), cur=sel.value;
     sel.innerHTML = id==='vc'
@@ -542,6 +606,67 @@ function renderData() {
   });
   html += '</tbody></table>';
   document.getElementById('dataTbl').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════
+//  CLASS REFERENCE PANEL
+// ══════════════════════════════════════════════════════════
+function updateClassRef() {
+  const cls = document.getElementById('eClass').value;
+  const ref = document.getElementById('classRef');
+  if (!cls || !sheetData.classHeaders || !sheetData.classHeaders.length) {
+    ref.style.display = 'none'; return;
+  }
+  const ci = sheetData.classHeaders.indexOf(cls);
+  if (ci < 0) { ref.style.display = 'none'; return; }
+
+  const items = sheetData.rows.filter(r => {
+    const v = parseFloat(r.classCounts[ci]);
+    return !isNaN(v) && v > 0;
+  });
+
+  const body = document.getElementById('classRefBody');
+  if (!items.length) {
+    body.innerHTML = '<div class="no-items">No items recorded for this class yet.</div>';
+  } else {
+    let html = '<table><thead><tr><th>Item</th><th>Code</th><th style="text-align:center">Qty</th></tr></thead><tbody>';
+    items.forEach(r => {
+      html += `<tr><td>${r.itemName}</td><td style="font-family:monospace;font-size:11.5px">${r.assetCode}</td><td style="text-align:center"><span class="qb">${r.classCounts[ci]}</span></td></tr>`;
+    });
+    html += '</tbody></table>';
+    body.innerHTML = html;
+  }
+  ref.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════════
+//  CLASS LOCK / UNLOCK
+// ══════════════════════════════════════════════════════════
+function doLockClass() {
+  const cls = document.getElementById('eClass').value;
+  if (!cls) return;
+  lockedClasses.add(cls);
+  updateLockUI(cls);
+  document.getElementById('submitBtn').disabled = true;
+  showMsg('sm', `"${cls}" locked. Only Kush or Darsh can add entries to it now.`, 'info');
+}
+
+function doUnlockClass() {
+  if (!ADMIN_USERS.includes(currentUser)) {
+    showMsg('sm', 'Only Kush or Darsh can unlock a class.', 'err');
+    return;
+  }
+  const cls = document.getElementById('eClass').value;
+  lockedClasses.delete(cls);
+  updateLockUI(cls);
+  document.getElementById('submitBtn').disabled = false;
+  clearMsg('sm');
+}
+
+function updateLockUI(cls) {
+  const locked = lockedClasses.has(cls);
+  document.getElementById('lockClassBtn').style.display   = (cls && !locked) ? '' : 'none';
+  document.getElementById('unlockClassBtn').style.display = (cls && locked)  ? '' : 'none';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -595,34 +720,75 @@ function renderLog() {
 }
 
 // ══════════════════════════════════════════════════════════
+//  EXCEL DOWNLOAD
+// ══════════════════════════════════════════════════════════
+function downloadExcel() {
+  if (typeof XLSX === 'undefined') { alert('Excel library not loaded. Check your internet connection.'); return; }
+  const srch = document.getElementById('ls').value.toLowerCase();
+  const usr  = document.getElementById('lu2').value;
+  const filtered = logData.filter(r =>
+    (!usr||r['USER NAME']===usr) &&
+    (!srch||Object.values(r).some(v=>String(v).toLowerCase().includes(srch))));
+
+  if (!filtered.length) { alert('No data to download.'); return; }
+
+  const cols = ['USER NAME','ITEM NAME','ASSET CLASSIFICATION CODE','CLASS NAME','QTY','TIMESTAMP'];
+  const wsData = [cols, ...filtered.map(r => cols.map(c => r[c] !== undefined ? r[c] : ''))];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = cols.map(c => ({ wch: Math.max(c.length, ...filtered.map(r => String(r[c]||'').length), 10) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Edit Log');
+  const filename = usr ? `EditLog_${usr}.xlsx` : `EditLog_All.xlsx`;
+  XLSX.writeFile(wb, filename);
+}
+
+// ══════════════════════════════════════════════════════════
 //  ENTRY FORM
 // ══════════════════════════════════════════════════════════
-function onItemChange() {
-  const sel=document.getElementById('eItem');
-  document.getElementById('eCode').value=sel.value;
+function onClassChange() {
+  const cls = document.getElementById('eClass').value;
+  const locked = lockedClasses.has(cls);
+  updateLockUI(cls);
+  document.getElementById('submitBtn').disabled = locked;
+  if (locked) showMsg('sm', `"${cls}" is locked. Only Kush or Darsh can add entries.`, 'info');
+  else clearMsg('sm');
+  updateClassRef();
+  updatePreview();
+}
+
+function onItemSearch() {
+  const val  = document.getElementById('eItemSearch').value;
+  const code = itemMap[val] || '';
+  document.getElementById('eCode').value = code;
   updatePreview();
 }
 
 function updatePreview() {
-  const sel=document.getElementById('eItem');
-  const item=sel.options[sel.selectedIndex]?.text||'';
-  const code=document.getElementById('eCode').value;
-  const cls=document.getElementById('eClass').value;
-  const qty=parseInt(document.getElementById('eQty').value,10);
-  const box=document.getElementById('prevBox');
-  if(item&&item!=='— Select Item —'&&cls&&qty>0){
-    document.getElementById('pItem').textContent=item;
-    document.getElementById('pCode').textContent=code;
-    document.getElementById('pClass').textContent=cls;
-    document.getElementById('pQty').textContent=qty;
+  const itemName = document.getElementById('eItemSearch').value;
+  const code     = document.getElementById('eCode').value;
+  const cls      = document.getElementById('eClass').value;
+  const qty      = parseInt(document.getElementById('eQty').value, 10);
+  const box      = document.getElementById('prevBox');
 
-    const prevTotal = logData
-      .filter(r => r['ASSET CLASSIFICATION CODE']===code && r['CLASS NAME']===cls)
-      .reduce((sum, r) => sum + (parseFloat(r['QTY'])||0), 0);
-    const prevEl = document.getElementById('pPrev');
-    prevEl.textContent = prevTotal > 0
-      ? 'Previously recorded: ' + prevTotal + ' unit(s) in this class'
-      : 'No previous entries for this item in this class';
+  // Need a valid item (must match datalist), class, and non-zero qty
+  if (itemName && itemMap[itemName] && cls && !isNaN(qty) && qty !== 0) {
+    document.getElementById('pItem').textContent  = itemName;
+    document.getElementById('pCode').textContent  = code;
+    document.getElementById('pClass').textContent = cls;
+    document.getElementById('pQty').textContent   = Math.abs(qty);
+    document.getElementById('pVerb').textContent  = qty < 0 ? 'Will remove' : 'Will add';
+    document.getElementById('pPrep').textContent  = qty < 0 ? 'from' : 'to';
+
+    // Use sheetData (live from server) — not logData — so count is always accurate
+    const ci  = sheetData.classHeaders.indexOf(cls);
+    const row = sheetData.rows.find(r => r.assetCode === code);
+    let current = 0;
+    if (row && ci >= 0) current = parseFloat(row.classCounts[ci]) || 0;
+
+    const after = current + qty;
+    document.getElementById('pPrev').textContent = current > 0
+      ? `Currently in class: ${current} unit(s)  →  After save: ${after}`
+      : `No entries yet in this class${qty > 0 ? '  →  After save: ' + qty : ''}`;
 
     box.classList.add('show');
   } else {
@@ -632,35 +798,61 @@ function updatePreview() {
 
 function submitEntry() {
   clearMsg('sm');
-  const iSel=document.getElementById('eItem');
-  const itemName=iSel.options[iSel.selectedIndex]?.text||'';
-  const assetCode=document.getElementById('eCode').value.trim();
-  const className=document.getElementById('eClass').value.trim();
-  const qty=parseInt(document.getElementById('eQty').value,10);
+  const itemName  = document.getElementById('eItemSearch').value.trim();
+  const assetCode = document.getElementById('eCode').value.trim();
+  const className = document.getElementById('eClass').value.trim();
+  const qty       = parseInt(document.getElementById('eQty').value, 10);
 
-  if(!itemName||itemName==='— Select Item —'){showMsg('sm','Please select an item.','err');return}
-  if(!assetCode){showMsg('sm','Asset code is missing.','err');return}
-  if(!className){showMsg('sm','Please select a class.','err');return}
-  if(isNaN(qty)||qty<1){showMsg('sm','Enter a valid quantity (min 1).','err');return}
+  if (lockedClasses.has(className)) { showMsg('sm', `"${className}" is locked. Only Kush or Darsh can unlock it.`, 'err'); return; }
+  if (!itemName || !itemMap[itemName]) { showMsg('sm','Please select a valid item from the list.','err'); return; }
+  if (!assetCode)                      { showMsg('sm','Asset code is missing.','err'); return; }
+  if (!className)                      { showMsg('sm','Please select a class.','err'); return; }
+  if (isNaN(qty) || qty === 0)         { showMsg('sm','Enter a valid quantity (cannot be 0).','err'); return; }
 
-  setBusy('submitBtn',true,'Save Entry');
+  // Prevent going negative (req 6)
+  const ci  = sheetData.classHeaders.indexOf(className);
+  const row = sheetData.rows.find(r => r.assetCode === assetCode);
+  if (row && ci >= 0) {
+    const current = parseFloat(row.classCounts[ci]) || 0;
+    if (current + qty < 0) {
+      showMsg('sm', `Cannot go negative: current qty is ${current}, removing ${Math.abs(qty)} would give ${current + qty}.`, 'err');
+      return;
+    }
+  }
+
+  setBusy('submitBtn', true, 'Save Entry');
 
   call('submitEntry',
-    [{ username:currentUser, itemName, assetCode, className, qty }],
+    [{ username: currentUser, itemName, assetCode, className, qty }],
     res => {
-      setBusy('submitBtn',false,'Save Entry');
-      if(res&&res.success){ showMsg('sm','✓ '+res.message,'ok'); clearForm(); loadData(); }
-      else showMsg('sm',(res&&res.message)||'Save failed.','err');
+      setBusy('submitBtn', false, 'Save Entry');
+      if (res && res.success) {
+        showMsg('sm', '✓ ' + res.message, 'ok');
+        // Update local sheetData immediately so UI reflects change instantly
+        const ci2  = sheetData.classHeaders.indexOf(className);
+        const row2 = sheetData.rows.find(r => r.assetCode === assetCode);
+        if (row2 && ci2 >= 0) {
+          const cur2 = parseFloat(row2.classCounts[ci2]) || 0;
+          row2.classCounts[ci2] = cur2 + qty;
+        }
+        updateClassRef();
+        updateStats();
+        clearForm();
+        // Background sync with server to confirm actual state
+        setTimeout(() => { loadData(); loadLog(); }, 2000);
+      } else {
+        showMsg('sm', (res && res.message) || 'Save failed.', 'err');
+      }
     },
-    err => { setBusy('submitBtn',false,'Save Entry'); showMsg('sm','Error: '+err,'err'); }
+    err => { setBusy('submitBtn', false, 'Save Entry'); showMsg('sm', 'Error: ' + err, 'err'); }
   );
 }
 
 function clearForm() {
-  document.getElementById('eItem').value='';
-  document.getElementById('eCode').value='';
-  document.getElementById('eClass').value='';
-  document.getElementById('eQty').value='1';
+  // Keep class selection (req 1 — persists for next entry)
+  document.getElementById('eItemSearch').value = '';
+  document.getElementById('eCode').value        = '';
+  document.getElementById('eQty').value         = '1';
   document.getElementById('prevBox').classList.remove('show');
   clearMsg('sm');
 }
