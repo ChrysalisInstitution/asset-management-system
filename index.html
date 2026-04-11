@@ -765,8 +765,13 @@ function csRender(names) {
       const d = document.createElement('div');
       d.className = 'cs-opt';
       d.textContent = name;
+      // Desktop: mousedown fires before blur so dropdown stays open
       d.addEventListener('mousedown', e => { e.preventDefault(); csSelect(name); });
-      d.addEventListener('touchend', e => { e.preventDefault(); csSelect(name); });
+      // Mobile: only select if finger didn't move (i.e. it's a tap, not a scroll)
+      let touched = false;
+      d.addEventListener('touchstart', () => { touched = true; }, { passive: true });
+      d.addEventListener('touchmove',  () => { touched = false; }, { passive: true });
+      d.addEventListener('touchend',   e => { if (touched) { e.preventDefault(); csSelect(name); } touched = false; });
       list.appendChild(d);
     });
   }
