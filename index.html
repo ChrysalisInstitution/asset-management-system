@@ -150,6 +150,19 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
 .tbl-empty{padding:48px 20px;text-align:center;color:var(--s400);font-size:14px}
 .tbl-loading{padding:40px 20px;text-align:center;color:var(--s400);display:flex;flex-direction:column;align-items:center;gap:12px}
 
+/* ── CUSTOM SEARCHABLE DROPDOWN ── */
+.cs-wrap{position:relative;width:100%}
+.cs-box{display:flex;border:1.5px solid var(--s300);border-radius:var(--r8);background:var(--s50);transition:border-color .15s,box-shadow .15s,background .15s;overflow:hidden}
+.cs-box:focus-within{border-color:var(--g400);background:var(--white);box-shadow:0 0 0 3px rgba(46,158,106,.14)}
+.cs-box input{border:none;background:transparent;box-shadow:none;outline:none;flex:1;padding:12px 14px;font-family:inherit;font-size:15px;color:var(--s800);width:100%;appearance:none;-webkit-appearance:none}
+.cs-arrow{background:none;border:none;border-left:1.5px solid var(--s300);padding:0 13px;cursor:pointer;color:var(--s500);font-size:11px;flex-shrink:0;transition:background .15s}
+.cs-arrow:hover{background:var(--s100)}
+.cs-list{position:absolute;top:calc(100% + 5px);left:0;right:0;background:var(--white);border:1.5px solid var(--s300);border-radius:var(--r8);box-shadow:0 6px 20px rgba(0,0,0,.13);z-index:600;max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none}
+.cs-opt{padding:11px 14px;cursor:pointer;font-size:14.5px;color:var(--s800);border-bottom:1px solid var(--s100)}
+.cs-opt:last-child{border-bottom:none}
+.cs-opt:hover,.cs-opt:active{background:var(--g50);color:var(--g700)}
+.cs-empty{padding:11px 14px;font-size:13.5px;color:var(--s400);font-style:italic}
+
 /* ── SPINNER ── */
 .spin{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle}
 .spin.dk{border-color:rgba(0,0,0,.1);border-top-color:var(--s500);width:22px;height:22px;border-width:3px}
@@ -237,8 +250,13 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
         <div class="entry-grid">
           <div class="fg">
             <label>Item Name</label>
-            <input type="text" id="eItemSearch" list="eItemList" placeholder="Type to search or select…" oninput="onItemSearch()" autocomplete="off">
-            <datalist id="eItemList"></datalist>
+            <div class="cs-wrap" id="itemSelectWrap">
+              <div class="cs-box">
+                <input type="text" id="eItemSearch" placeholder="Type to search or select…" oninput="csFilter()" onfocus="csOpen()" autocomplete="off" autocorrect="off" spellcheck="false">
+                <button type="button" class="cs-arrow" onclick="csToggle()">&#9660;</button>
+              </div>
+              <div class="cs-list" id="csItemList"></div>
+            </div>
           </div>
           <div class="fg">
             <label>Asset Code</label>
@@ -547,18 +565,9 @@ function updateStats() {
 }
 
 function populateDDs() {
-  // Item datalist for searchable input
-  const dl = document.getElementById('eItemList');
-  dl.innerHTML = '';
+  // Build item map for custom dropdown
   itemMap = {};
-  sheetData.rows.forEach(r => {
-    if (r.itemName) {
-      itemMap[r.itemName] = r.assetCode;
-      const opt = document.createElement('option');
-      opt.value = r.itemName;
-      dl.appendChild(opt);
-    }
-  });
+  sheetData.rows.forEach(r => { if (r.itemName) itemMap[r.itemName] = r.assetCode; });
 
   // Class dropdowns
   ['eClass','vc'].forEach(id => {
@@ -743,6 +752,60 @@ function downloadExcel() {
 // ══════════════════════════════════════════════════════════
 //  ENTRY FORM
 // ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+//  CUSTOM ITEM DROPDOWN
+// ══════════════════════════════════════════════════════════
+function csRender(names) {
+  const list = document.getElementById('csItemList');
+  if (!names.length) {
+    list.innerHTML = '<div class="cs-empty">No items found</div>';
+  } else {
+    list.innerHTML = '';
+    names.forEach(name => {
+      const d = document.createElement('div');
+      d.className = 'cs-opt';
+      d.textContent = name;
+      d.addEventListener('mousedown', e => { e.preventDefault(); csSelect(name); });
+      d.addEventListener('touchend', e => { e.preventDefault(); csSelect(name); });
+      list.appendChild(d);
+    });
+  }
+  list.style.display = 'block';
+}
+
+function csOpen() {
+  const val = document.getElementById('eItemSearch').value.toLowerCase();
+  const names = Object.keys(itemMap).filter(n => !val || n.toLowerCase().includes(val));
+  csRender(names);
+}
+
+function csFilter() {
+  const val = document.getElementById('eItemSearch').value.toLowerCase();
+  const names = Object.keys(itemMap).filter(n => n.toLowerCase().includes(val));
+  csRender(names);
+  onItemSearch();
+}
+
+function csToggle() {
+  const list = document.getElementById('csItemList');
+  if (list.style.display === 'block') { list.style.display = 'none'; }
+  else { csOpen(); document.getElementById('eItemSearch').focus(); }
+}
+
+function csSelect(name) {
+  document.getElementById('eItemSearch').value = name;
+  document.getElementById('csItemList').style.display = 'none';
+  onItemSearch();
+}
+
+function csClose(e) {
+  if (!document.getElementById('itemSelectWrap').contains(e.target)) {
+    document.getElementById('csItemList').style.display = 'none';
+  }
+}
+document.addEventListener('mousedown', csClose);
+document.addEventListener('touchstart', csClose);
+
 function onClassChange() {
   const cls = document.getElementById('eClass').value;
   const locked = lockedClasses.has(cls);
