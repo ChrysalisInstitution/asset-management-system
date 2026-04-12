@@ -375,6 +375,9 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
 
         <!-- Summary counts after generation -->
         <div id="bcSummary" style="display:none;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+            <span id="bcSourceBadge" style="font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--s200);color:var(--s600)">—</span>
+          </div>
           <div class="stats-row" style="max-width:480px">
             <div class="stat"><div class="stat-lbl">Classes</div><div class="stat-val" id="bcStatCls">0</div></div>
             <div class="stat"><div class="stat-lbl">Items</div><div class="stat-val" id="bcStatItems">0</div></div>
@@ -638,7 +641,13 @@ function loginAs(username, role) {
   document.getElementById('uname').textContent = currentUser;
   document.getElementById('uav').textContent   = currentUser.charAt(0).toUpperCase();
   applyRoleRestrictions(currentRole);
-  loadLockedClasses(() => { loadData(); loadLog(); startAutoRefresh(); });
+  loadLockedClasses(() => {
+    loadData();
+    loadLog();
+    // Pre-load Bar Code tab data so Stickering tab works immediately
+    call('getBarCodeTabData', [], res => { barCodeTabData = Array.isArray(res) ? res : []; }, () => {});
+    startAutoRefresh();
+  });
 }
 
 function loadLockedClasses(callback) {
@@ -858,7 +867,11 @@ function switchTab(name) {
     document.getElementById('panel-'+t).classList.toggle('active', t===name);
     document.getElementById('tab-'+t).classList.toggle('active', t===name);
   });
-  if (name==='add')        { silentLoadLocks(); }
+  if (name==='add') {
+    silentLoadLocks();
+    // If sheet data hasn't loaded yet, trigger it now so dropdowns populate
+    if (!sheetData.classHeaders || !sheetData.classHeaders.length) loadData();
+  }
   if (name==='view')       loadData();
   if (name==='log')        loadLog();
   if (name==='barcode')    initBarcodeTab();
@@ -1262,31 +1275,49 @@ function submitEntry() {
     }
   }
 
-  setBusy('submitBtn', true, 'Save Entry');
+  // ── OPTIMISTIC UPDATE — instant UI, GAS saves in background ──
+  // 1. Snapshot for rollback
+  const rollbackCounts = row ? [...row.classCounts] : null;
 
+  // 2. Apply update locally right now (<1ms)
+  if (row && ci >= 0) row.classCounts[ci] = (parseFloat(row.classCounts[ci]) || 0) + qty;
+
+  // 3. Optimistically append to logData
+  const optimisticLog = {
+    'USER NAME': currentUser, 'ITEM NAME': itemName,
+    'ASSET CLASSIFICATION CODE': assetCode, 'CLASS NAME': className,
+    'QTY': qty, 'TIMESTAMP': new Date().toLocaleString('en-IN')
+  };
+  logData.unshift(optimisticLog);
+
+  // 4. Re-render UI instantly
+  updateClassRef();
+  updateStats();
+  clearForm();
+  showMsg('sm', '⏳ Saving…', 'info');
+
+  // 5. Save to GAS in background
   call('submitEntry',
     [{ username: currentUser, itemName, assetCode, className, qty }],
     res => {
-      setBusy('submitBtn', false, 'Save Entry');
       if (res && res.success) {
-        showMsg('sm', '✓ ' + res.message, 'ok');
-        // Update local sheetData immediately so UI reflects change instantly
-        const ci2  = sheetData.classHeaders.indexOf(className);
-        const row2 = sheetData.rows.find(r => r.assetCode === assetCode);
-        if (row2 && ci2 >= 0) {
-          const cur2 = parseFloat(row2.classCounts[ci2]) || 0;
-          row2.classCounts[ci2] = cur2 + qty;
-        }
-        updateClassRef();
-        updateStats();
-        clearForm();
-        // Background sync with server to confirm actual state
-        setTimeout(() => { loadData(); loadLog(); }, 2000);
+        showMsg('sm', '✓ Saved', 'ok');
+        setTimeout(() => clearMsg('sm'), 2000);
       } else {
-        showMsg('sm', (res && res.message) || 'Save failed.', 'err');
+        // Rollback
+        if (row && ci >= 0 && rollbackCounts) row.classCounts[ci] = rollbackCounts[ci];
+        logData.shift();
+        updateClassRef(); updateStats();
+        showMsg('sm', (res && res.message) || 'Save failed — please retry.', 'err');
       }
     },
-    err => { setBusy('submitBtn', false, 'Save Entry'); showMsg('sm', 'Error: ' + err, 'err'); }
+    err => {
+      // Rollback
+      if (row && ci >= 0 && rollbackCounts) row.classCounts[ci] = rollbackCounts[ci];
+      logData.shift();
+      updateClassRef(); updateStats();
+      showMsg('sm', 'Error: ' + err, 'err');
+    }
   );
 }
 
@@ -1312,6 +1343,55 @@ function initBarcodeTab() {
     sheetData.classHeaders.forEach(h => sel.appendChild(new Option(h, h)));
     if (cur) sel.value = cur;
   }
+  // Load previously generated data from Bar Code sheet
+  loadExistingBarcodes();
+}
+
+function loadExistingBarcodes() {
+  document.getElementById('bcContainer').innerHTML =
+    '<div class="tbl-loading"><span class="spin dk"></span><span>Checking Bar Code sheet…</span></div>';
+
+  call('getBarCodeTabData', [], res => {
+    const rows = Array.isArray(res) ? res.filter(r => r.barCode && !r.remarks) : [];
+    // Also include cancelled ones — show all
+    const allRows = Array.isArray(res) ? res.filter(r => r.barCode) : [];
+
+    if (!allRows.length) {
+      document.getElementById('bcContainer').innerHTML =
+        '<div class="tbl-empty" style="color:var(--s400);padding:24px 0">No labels generated yet — click "Generate Labels" to create them.</div>';
+      document.getElementById('bcSummary').style.display = 'none';
+      document.getElementById('bcWordBtn').style.display = 'none';
+      return;
+    }
+
+    // Convert Bar Code sheet rows → bcData format
+    bcData = allRows.map(r => ({
+      className: r.className,
+      itemName:  r.itemName,
+      assetCode: (r.barCode.split('/')[1]) || '',
+      codeText:  r.barCode,
+      cancelled: r.remarks === 'Cancelled'
+    }));
+
+    // Update stats
+    const active = bcData.filter(b => !b.cancelled);
+    document.getElementById('bcStatCls').textContent   = [...new Set(active.map(b => b.className))].length;
+    document.getElementById('bcStatItems').textContent  = [...new Set(active.map(b => b.assetCode))].length;
+    document.getElementById('bcStatTotal').textContent  = active.length;
+    document.getElementById('bcSummary').style.display  = '';
+    document.getElementById('bcWordBtn').style.display  = '';
+
+    // Badge: loaded from sheet
+    const badge = document.getElementById('bcSourceBadge');
+    badge.textContent  = '📂 Loaded from Bar Code sheet';
+    badge.style.background = 'var(--amber-bg)';
+    badge.style.color      = 'var(--amber)';
+
+    renderBarcodeGrid();
+  }, () => {
+    document.getElementById('bcContainer').innerHTML =
+      '<div class="tbl-empty" style="color:var(--s400);padding:24px 0">Could not load existing data — connect to Google Sheets.</div>';
+  });
 }
 
 function generateBarcodes() {
@@ -1367,6 +1447,12 @@ function generateBarcodes() {
   document.getElementById('bcSummary').style.display  = '';
   document.getElementById('bcWordBtn').style.display  = '';
 
+  // Badge: freshly generated
+  const badge = document.getElementById('bcSourceBadge');
+  badge.textContent  = '✨ Freshly Generated — ' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+  badge.style.background = 'var(--g50)';
+  badge.style.color      = 'var(--g700)';
+
   renderBarcodeGrid();
 
   // Save to Bar Code sheet (replaces old data — no duplicates)
@@ -1410,7 +1496,14 @@ function renderBarcodeGrid() {
     // First card = class name (matches Word output)
     html += `<div class="bc-card bc-card-cls"><div class="bc-code-text" style="color:var(--g700);font-size:13px">${cls}</div></div>`;
     items.forEach(b => {
-      html += `<div class="bc-card"><div class="bc-code-text">${b.codeText}</div></div>`;
+      if (b.cancelled) {
+        html += `<div class="bc-card" style="opacity:.4;background:#fef2f2;border-color:#fecaca" title="Cancelled">
+          <div class="bc-code-text" style="text-decoration:line-through;color:#dc2626">${b.codeText}</div>
+          <div style="font-size:10px;color:#dc2626;font-weight:700;margin-top:2px">CANCELLED</div>
+        </div>`;
+      } else {
+        html += `<div class="bc-card"><div class="bc-code-text">${b.codeText}</div></div>`;
+      }
     });
     html += `</div></div>`;
   });
@@ -1613,7 +1706,41 @@ async function downloadWordDoc() {
 let stickeringData  = []; // rows from Stickering sheet
 let barCodeTabData  = []; // rows from Bar Code sheet (for cancel cascade)
 
-function initStickeringTab() {
+function initStickeringTab(_retried) {
+  // ── Guard: ensure prerequisite data is loaded before populating UI ──
+  const needsSheetData = !sheetData.classHeaders || !sheetData.classHeaders.length;
+  const needsBcData    = !barCodeTabData.length && currentRole !== 'Demo';
+
+  if ((needsSheetData || needsBcData) && !_retried) {
+    // Show loading state while we fetch missing data
+    document.getElementById('stTableWrap').innerHTML =
+      '<div class="tbl-loading"><span class="spin dk"></span><span>Loading data…</span></div>';
+
+    let pending = 0;
+    const done = () => { if (--pending === 0) initStickeringTab(true); };
+
+    if (needsSheetData) {
+      pending++;
+      call('getDataSheetInfo', [], res => {
+        if (res && !res.error) {
+          sheetData = res || { classHeaders:[], rows:[] };
+          populateDDs(); updateStats(); updateClassRef(); applyClassLockState();
+        }
+        done();
+      }, () => done());
+    }
+
+    if (needsBcData) {
+      pending++;
+      call('getBarCodeTabData', [], res => {
+        barCodeTabData = Array.isArray(res) ? res : [];
+        done();
+      }, () => done());
+    }
+    return;
+  }
+
+  // ── Data is ready — build UI ──
   const isAdmin = currentRole === 'Admin';
   document.getElementById('stCancelCard').style.display = (currentRole === 'Demo') ? 'none' : '';
 
@@ -1637,12 +1764,10 @@ function initStickeringTab() {
   const stAddBtn = document.getElementById('stAddBtn');
   if (stAddBtn) stAddBtn.disabled = isDemo;
 
-  // Load Bar Code tab data for cancel section (Admin only)
-  if (isAdmin) {
-    call('getBarCodeTabData', [], res => {
-      barCodeTabData = Array.isArray(res) ? res : [];
-    }, () => { barCodeTabData = []; });
-  }
+  // Refresh Bar Code tab data silently (always keep it current)
+  call('getBarCodeTabData', [], res => {
+    barCodeTabData = Array.isArray(res) ? res : [];
+  }, () => {});
 
   stickeringLoad();
 }
@@ -1827,29 +1952,56 @@ function stSubmitCancel() {
   const checked = [...document.querySelectorAll('.st-bc-chk:checked')];
   if (!checked.length) return;
   const slNos = checked.map(c => c.dataset.slno);
-  const codes = checked.map(c => c.dataset.code).join(', ');
-  if (!confirm(`Mark ${slNos.length} sticker(s) as Cancelled?\n\n${codes}`)) return;
+  const codes = checked.map(c => c.dataset.code);
+  if (!confirm(`Mark ${slNos.length} sticker(s) as Cancelled?\n\n${codes.join(', ')}`)) return;
 
-  setBusy('stSubmitCancelBtn', true, '❌ Mark as Cancelled');
-  // cancelBarCodes updates the Bar Code sheet's Remarks column to "Cancelled"
+  // ── OPTIMISTIC UPDATE ──
+  // 1. Snapshot for rollback
+  const rollbackStickering = stickeringData.map(r => ({ ...r }));
+  const rollbackBcData     = barCodeTabData.map(r => ({ ...r }));
+  const nextSlNo = stickeringData.length ? Math.max(...stickeringData.map(r => Number(r.slNo) || 0)) + 1 : 1;
+
+  // 2. For each cancelled code: update stickeringData instantly
+  codes.forEach((code, i) => {
+    const existing = stickeringData.find(r => r.barCode.toUpperCase() === code.toUpperCase());
+    if (existing) {
+      existing.remarks = 'Cancelled';
+    } else {
+      const bcRow = barCodeTabData.find(r => r.barCode.toUpperCase() === code.toUpperCase());
+      stickeringData.push({
+        slNo: nextSlNo + i, barCode: code,
+        itemName: bcRow ? bcRow.itemName : '',
+        className: bcRow ? bcRow.className : '',
+        remarks: 'Cancelled'
+      });
+    }
+  });
+
+  // 3. Re-render instantly, reset cascade
+  stickeringRender();
+  stickeringUpdateStats();
+  document.getElementById('stCancelClass').value = '';
+  document.getElementById('stCancelItemSearch').value = '';
+  document.getElementById('stCancelCsList').style.display = 'none';
+  document.getElementById('stCancelItemBox').style.opacity = '.55';
+  document.getElementById('stCancelItemBox').style.pointerEvents = 'none';
+  stCancelItems = [];
+  document.getElementById('stBcCheckWrap').style.display = 'none';
+  document.getElementById('stBcCheckList').innerHTML = '';
+  showMsg('stCancelMsg', `⏳ Saving ${slNos.length} cancellation(s)…`, 'info');
+
+  // 4. Save to GAS in background
   call('cancelBarCodes', [slNos], res => {
-    setBusy('stSubmitCancelBtn', false, '❌ Mark as Cancelled');
     showMsg('stCancelMsg', `✅ ${slNos.length} sticker(s) marked as Cancelled.`, 'ok');
-    // Reset cascade
-    document.getElementById('stCancelClass').value = '';
-    document.getElementById('stCancelItemSearch').value = '';
-    document.getElementById('stCancelCsList').style.display = 'none';
-    document.getElementById('stCancelItemBox').style.opacity = '.55';
-    document.getElementById('stCancelItemBox').style.pointerEvents = 'none';
-    stCancelItems = [];
-    document.getElementById('stBcCheckWrap').style.display = 'none';
-    document.getElementById('stBcCheckList').innerHTML = '';
-    // Reload both datasets
-    call('getBarCodeTabData', [], res2 => { barCodeTabData = Array.isArray(res2) ? res2 : []; }, () => {});
-    stickeringLoad();
+    setTimeout(() => clearMsg('stCancelMsg'), 2500);
+    call('getBarCodeTabData', [], r2 => { barCodeTabData = Array.isArray(r2) ? r2 : []; }, () => {});
   }, err => {
-    setBusy('stSubmitCancelBtn', false, '❌ Mark as Cancelled');
-    showMsg('stCancelMsg', 'Error: ' + err, 'err');
+    // Rollback
+    stickeringData = rollbackStickering;
+    barCodeTabData = rollbackBcData;
+    stickeringRender();
+    stickeringUpdateStats();
+    showMsg('stCancelMsg', 'Error — rolled back: ' + err, 'err');
   });
 }
 
@@ -2016,20 +2168,36 @@ function stickeringAddNew() {
     if (!confirm(`⚠️ Bar code "${code}" already exists in the ${where}.\n\nDo you still want to add it?`)) return;
   }
 
-  setBusy('stAddBtn', true, '➕ Add New Code');
+  // ── OPTIMISTIC UPDATE ──
+  // 1. Build new row and add to local data instantly
+  const nextSlNo = stickeringData.length
+    ? Math.max(...stickeringData.map(r => Number(r.slNo) || 0)) + 1 : 1;
+  const newRow = { slNo: nextSlNo, barCode: code, itemName: item, className: cls, remarks: 'New Added' };
+  stickeringData.push(newRow);
+
+  // 2. Re-render instantly
+  stickeringRender();
+  stickeringUpdateStats();
+  stickeringClearAdd();
+  showMsg('stAddMsg', `⏳ Saving "${code}"…`, 'info');
+
+  // 3. Save to GAS in background
   call('addStickeringRow', [{ barCode: code, itemName: item, className: cls }], res => {
-    setBusy('stAddBtn', false, '➕ Add New Code');
     if (res && res.duplicate) {
-      showMsg('stAddMsg', `⚠️ Bar code "${code}" already exists in Stickering sheet.`, 'err'); return;
+      // Already exists in sheet — our local add is fine, just inform
+      showMsg('stAddMsg', `✅ "${code}" recorded (already in sheet).`, 'ok');
+    } else {
+      showMsg('stAddMsg', `✅ "${code}" added successfully.`, 'ok');
     }
-    showMsg('stAddMsg', `✅ "${code}" added successfully.`, 'ok');
-    stickeringClearAdd();
-    // Reload bar code data too so next suggestion is accurate
+    setTimeout(() => clearMsg('stAddMsg'), 2500);
     call('getBarCodeTabData', [], r2 => { barCodeTabData = Array.isArray(r2) ? r2 : []; }, () => {});
-    stickeringLoad();
   }, err => {
-    setBusy('stAddBtn', false, '➕ Add New Code');
-    showMsg('stAddMsg', 'Error: ' + err, 'err');
+    // Rollback — remove the optimistically added row
+    const idx = stickeringData.indexOf(newRow);
+    if (idx > -1) stickeringData.splice(idx, 1);
+    stickeringRender();
+    stickeringUpdateStats();
+    showMsg('stAddMsg', 'Error — rolled back: ' + err, 'err');
   });
 }
 
