@@ -163,6 +163,9 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
 .cs-opt:hover,.cs-opt:active{background:var(--g50);color:var(--g700)}
 .cs-empty{padding:11px 14px;font-size:13.5px;color:var(--s400);font-style:italic}
 
+/* ── LIVE INDICATOR ── */
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
+
 /* ── SPINNER ── */
 .spin{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle}
 .spin.dk{border-color:rgba(0,0,0,.1);border-top-color:var(--s500);width:22px;height:22px;border-width:3px}
@@ -171,12 +174,24 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
 /* ── MOBILE SIGN OUT — must come before the media query ── */
 .mob-out{display:none}
 
+/* ── BARCODE TAB ── */
+.bc-class-section{margin-bottom:28px}
+.bc-class-title{font-size:15px;font-weight:700;color:var(--g700);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--g200);display:flex;align-items:center;gap:10px}
+.bc-count{font-size:11.5px;font-weight:500;color:var(--s500);background:var(--s200);padding:2px 9px;border-radius:12px}
+.bc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.bc-card{background:var(--white);border:1.5px solid var(--s200);border-radius:var(--r8);padding:12px 8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;min-height:52px}
+.bc-card-cls{background:var(--g50);border-color:var(--g200)}
+.bc-code-text{font-family:'DM Mono',monospace;font-size:12.5px;font-weight:700;color:var(--s800);letter-spacing:.03em;word-break:break-all;line-height:1.4}
+.bc-empty{padding:48px 20px;text-align:center;color:var(--s400);font-size:14px}
+.bc-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px}
+.bc-toolbar .fg{flex:1;min-width:130px}
+
 /* ── MOBILE ── */
 @media(max-width:479px){
   .tab-bar{position:fixed;bottom:0;left:0;right:0;z-index:100;border-top:1.5px solid var(--s200);border-bottom:none;padding:0;box-shadow:0 -2px 12px rgba(0,0,0,.08);justify-content:stretch}
-  .tab-btn{flex:1;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px 10px;gap:3px;font-size:10.5px;border-bottom:none;border-top:2.5px solid transparent;display:flex}
+  .tab-btn{flex:1;flex-direction:column;align-items:center;justify-content:center;padding:6px 2px 10px;gap:3px;font-size:10px;border-bottom:none;border-top:2.5px solid transparent;display:flex}
   .tab-btn.active{border-bottom:none;border-top-color:var(--g400);color:var(--g600)}
-  .tab-icon{display:block;font-size:20px;line-height:1}
+  .tab-icon{display:block;font-size:18px;line-height:1}
   .main{padding-bottom:74px}
   .btn-out{display:inline-flex;padding:5px 10px;font-size:12px;margin-left:6px}
 }
@@ -207,6 +222,9 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
     <div class="topbar-brand">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg>
       <span class="brand-text">Asset Manager</span>
+      <span id="liveIndicator" title="Live sync" style="display:none;align-items:center;gap:5px;font-size:11px;font-weight:600;color:rgba(255,255,255,.7);background:rgba(255,255,255,.1);border-radius:20px;padding:2px 9px 2px 6px;flex-shrink:0">
+        <span id="liveDot" style="width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block;animation:livePulse 1.8s ease-in-out infinite"></span>LIVE
+      </span>
     </div>
     <div style="display:flex;align-items:center;flex-shrink:0">
       <div class="user-chip">
@@ -226,6 +244,12 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
     </button>
     <button class="tab-btn" id="tab-log" onclick="switchTab('log')">
       <span class="tab-icon">📝</span>Edit Log
+    </button>
+    <button class="tab-btn" id="tab-barcode" onclick="switchTab('barcode')">
+      <span class="tab-icon">🏷️</span>Barcodes
+    </button>
+    <button class="tab-btn" id="tab-stickering" onclick="switchTab('stickering')">
+      <span class="tab-icon">📌</span>Stickering
     </button>
   </div>
 
@@ -329,11 +353,156 @@ tbody td{padding:10px 14px;color:var(--s800);vertical-align:middle}
       </div>
     </div>
 
+    <!-- BARCODE GENERATOR -->
+    <div class="tab-panel" id="panel-barcode">
+      <div class="card">
+        <div class="card-title">Barcode Generator &amp; Word Export</div>
+
+        <div class="bc-toolbar">
+          <div class="fg" style="max-width:160px">
+            <label>School Code</label>
+            <input type="text" id="bcSchoolCode" placeholder="e.g. SCH" value="SCH" style="text-transform:uppercase">
+          </div>
+          <div class="fg">
+            <label>Filter Class</label>
+            <select id="bcClass"><option value="">All Classes</option></select>
+          </div>
+          <button class="btn btn-p" onclick="generateBarcodes()" id="bcGenBtn">🏷️ Generate Labels</button>
+          <button class="btn btn-s" id="bcWordBtn" onclick="downloadWordDoc()" style="display:none">📄 Download Word (.docx)</button>
+        </div>
+
+        <div id="bcMsg" class="msg"></div>
+
+        <!-- Summary counts after generation -->
+        <div id="bcSummary" style="display:none;margin-bottom:16px">
+          <div class="stats-row" style="max-width:480px">
+            <div class="stat"><div class="stat-lbl">Classes</div><div class="stat-val" id="bcStatCls">0</div></div>
+            <div class="stat"><div class="stat-lbl">Items</div><div class="stat-val" id="bcStatItems">0</div></div>
+            <div class="stat"><div class="stat-lbl">Labels</div><div class="stat-val" id="bcStatTotal">0</div></div>
+          </div>
+        </div>
+
+        <!-- Barcode grid (rendered here) -->
+        <div id="bcContainer"></div>
+      </div>
+    </div>
+
+    <!-- STICKERING -->
+    <div class="tab-panel" id="panel-stickering">
+
+      <!-- CANCEL STICKERS (Admin only) — TOP -->
+      <div class="card" id="stCancelCard">
+        <div class="card-title">❌ Cancel Stickers</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+          <div class="fg" style="min-width:180px">
+            <label>Step 1 — Class</label>
+            <select id="stCancelClass" onchange="stCancelClassChange()">
+              <option value="">— Select Class —</option>
+            </select>
+          </div>
+          <div class="fg" style="min-width:200px">
+            <label>Step 2 — Item Name</label>
+            <div class="cs-wrap" id="stCancelItemWrap">
+              <div class="cs-box" id="stCancelItemBox" style="opacity:.55;pointer-events:none">
+                <input type="text" id="stCancelItemSearch" placeholder="Type to search or select…"
+                  oninput="stCancelCsFilter()" onfocus="stCancelCsOpen()"
+                  autocomplete="off" autocorrect="off" spellcheck="false">
+                <button type="button" class="cs-arrow" onclick="stCancelCsToggle()">&#9660;</button>
+              </div>
+              <div class="cs-list" id="stCancelCsList"></div>
+            </div>
+          </div>
+          <button class="btn btn-s" onclick="initStickeringTab()" style="height:42px">🔄 Refresh</button>
+        </div>
+        <div id="stBcCheckWrap" style="display:none">
+          <label style="font-size:11.5px;font-weight:700;color:var(--s600);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:10px">Step 3 — Select Bar Codes to Cancel</label>
+          <div id="stBcCheckList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-s" style="font-size:12.5px;padding:6px 14px" onclick="stSelectAllBc(true)">Select All</button>
+            <button class="btn btn-s" style="font-size:12.5px;padding:6px 14px" onclick="stSelectAllBc(false)">Clear All</button>
+            <span id="stBcSelCount" style="font-size:13px;color:var(--s500)">0 selected</span>
+          </div>
+          <div style="margin-top:14px">
+            <button class="btn btn-danger" id="stSubmitCancelBtn" onclick="stSubmitCancel()" disabled>❌ Mark as Cancelled</button>
+          </div>
+        </div>
+        <div id="stCancelMsg" class="msg"></div>
+      </div>
+
+      <!-- ADD NEW CODE -->
+      <div class="card">
+        <div class="card-title">➕ Add New Sticker Code</div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr">
+          <div class="fg">
+            <label>Class Name</label>
+            <select id="stNewClass" onchange="stNewClassChange()"><option value="">— Select Class —</option></select>
+          </div>
+          <div class="fg">
+            <label>Item Name</label>
+            <div class="cs-wrap" id="stItemSelectWrap">
+              <div class="cs-box" id="stNewItemBox" style="opacity:.55;pointer-events:none">
+                <input type="text" id="stNewItem" placeholder="Type to search or select…" oninput="stCsFilter()" onfocus="stCsOpen()" autocomplete="off" autocorrect="off" spellcheck="false">
+                <button type="button" class="cs-arrow" onclick="stCsToggle()">&#9660;</button>
+              </div>
+              <div class="cs-list" id="stCsItemList"></div>
+            </div>
+          </div>
+          <div class="fg">
+            <label>Bar Code <span id="stNewCodeHint" style="font-weight:400;color:var(--s400);font-size:11px;text-transform:none"></span></label>
+            <input type="text" id="stNewCode" placeholder="Auto-suggested or type manually" style="text-transform:uppercase">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+          <button class="btn btn-p" id="stAddBtn" onclick="stickeringAddNew()">➕ Add New Code</button>
+          <button class="btn btn-s" onclick="stickeringClearAdd()">Clear</button>
+        </div>
+        <div id="stAddMsg" class="msg"></div>
+      </div>
+
+      <!-- VIEW RECORDS -->
+      <div class="card">
+        <div class="card-title">📋 Stickering Records</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+          <div class="fg" style="min-width:160px">
+            <label>Filter by Class</label>
+            <select id="stFilterClass" onchange="stickeringLoad()"><option value="">All Classes</option></select>
+          </div>
+          <div class="fg" style="min-width:160px">
+            <label>Filter by Status</label>
+            <select id="stFilterStatus" onchange="stickeringRender()">
+              <option value="">All</option>
+              <option value="New Added">New Added</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Active">Active</option>
+            </select>
+          </div>
+          <button class="btn btn-s" onclick="stickeringLoad()" style="height:42px">🔄 Refresh</button>
+        </div>
+        <div id="stTableWrap">
+          <div class="tbl-loading"><span class="spin dk"></span><span>Loading…</span></div>
+        </div>
+      </div>
+
+      <!-- SUMMARY STATS -->
+      <div class="card">
+        <div class="card-title">📊 Stickering Summary</div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val" id="stStatTotal">—</div></div>
+          <div class="stat"><div class="stat-lbl">Active</div><div class="stat-val" id="stStatActive">—</div></div>
+          <div class="stat"><div class="stat-lbl">New Added</div><div class="stat-val" id="stStatNew">—</div></div>
+          <div class="stat"><div class="stat-lbl">Cancelled</div><div class="stat-val" id="stStatCancelled">—</div></div>
+        </div>
+      </div>
+
+    </div><!-- /panel-stickering -->
+
   </div><!-- /main -->
   <div class="mob-out"><button onclick="doLogout()">Sign Out</button></div>
 </div><!-- /appScreen -->
 
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════
 //  CONFIG
@@ -374,6 +543,20 @@ function call(fn, args, onSuccess, onError) {
     } else if (fn === 'unlockClass') {
       const { className } = args[0];
       p = fetchGet({ action: 'unlockClass', className });
+    } else if (fn === 'saveBarcodes') {
+      p = fetchPost({ action: 'saveBarcodes' }, args[0]);
+    } else if (fn === 'getStickeringData') {
+      p = fetchGet({ action: 'getStickeringData', filterClass: args[0] || '' });
+    } else if (fn === 'updateStickeringRemarks') {
+      p = fetchPost({ action: 'updateStickeringRemarks' }, { slNos: args[0], remark: args[1] });
+    } else if (fn === 'addStickeringRow') {
+      p = fetchPost({ action: 'addStickeringRow' }, args[0]);
+    } else if (fn === 'getLastModified') {
+      p = fetchGet({ action: 'getLastModified' });
+    } else if (fn === 'getBarCodeTabData') {
+      p = fetchGet({ action: 'getBarCodeTabData' });
+    } else if (fn === 'cancelBarCodes') {
+      p = fetchPost({ action: 'cancelBarCodes' }, { slNos: args[0] });
     } else {
       onError('Unknown function: ' + fn); return;
     }
@@ -388,14 +571,28 @@ async function fetchGet(params) {
   return res.json();
 }
 
+async function fetchPost(params, body) {
+  const url = GAS_URL + '?' + new URLSearchParams(params);
+  const res = await fetch(url, {
+    method: 'POST',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
 // ══════════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════════
 let currentUser = '';
+let currentRole = ''; // Admin | Editor | Demo
 let sheetData   = { classHeaders: [], rows: [] };
 let logData     = [];
 let itemMap     = {}; // itemName → assetCode
-let lockedClasses = new Map(); // className → { lockedBy, timestamp }
+let lockedClasses    = new Map(); // className → { lockedBy, timestamp }
+let classAssignments = new Map(); // className → assignedUser
 
 // ══════════════════════════════════════════════════════════
 //  UTILS
@@ -422,7 +619,7 @@ function doLogin() {
     res => {
       setBusy('loginBtn', false, 'Sign In');
       if (res && res.success) {
-        loginAs(res.username);
+        loginAs(res.username, res.role || 'Editor');
       } else {
         showMsg('lm', (res && res.message) || 'Login failed.', 'err');
       }
@@ -431,27 +628,32 @@ function doLogin() {
   );
 }
 
-function loginAs(username) {
+function loginAs(username, role) {
   currentUser = username;
+  currentRole = (role || 'Editor').trim();
   store.setItem('assetMgrUser', username);
+  store.setItem('assetMgrRole', currentRole);
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appScreen').style.display   = 'block';
   document.getElementById('uname').textContent = currentUser;
   document.getElementById('uav').textContent   = currentUser.charAt(0).toUpperCase();
-  // Fetch persisted locks first, then load everything
+  applyRoleRestrictions(currentRole);
   loadLockedClasses(() => { loadData(); loadLog(); startAutoRefresh(); });
 }
 
 function loadLockedClasses(callback) {
   call('getLockedClasses', [],
     res => {
-      lockedClasses = new Map();
+      lockedClasses    = new Map();
+      classAssignments = new Map();
       (Array.isArray(res) ? res : []).forEach(r => {
-        if (r.className) lockedClasses.set(r.className, { lockedBy: r.lockedBy || '', timestamp: r.timestamp || '' });
+        if (!r.className) return;
+        if (r.assignedTo) classAssignments.set(r.className, r.assignedTo);
+        if (r.locked)     lockedClasses.set(r.className, { lockedBy: r.lockedBy || '', timestamp: r.timestamp || '' });
       });
       if (callback) callback();
     },
-    () => { if (callback) callback(); } // fail silently, don't block login
+    () => { if (callback) callback(); }
   );
 }
 
@@ -462,8 +664,11 @@ function loadLockedClasses(callback) {
 function doLogout() {
   stopAutoRefresh();
   store.removeItem('assetMgrUser');
+  store.removeItem('assetMgrRole');
   currentUser  = '';
+  currentRole  = '';
   lockedClasses.clear();
+  classAssignments.clear();
   document.getElementById('lu').value = '';
   document.getElementById('lp').value = '';
   clearMsg('lm');
@@ -471,6 +676,38 @@ function doLogout() {
   document.getElementById('appScreen').style.display   = 'none';
   // Reset lock UI
   updateLockUI('');
+}
+
+function applyRoleRestrictions(role) {
+  const isAdmin = role === 'Admin';
+  const isDemo  = role === 'Demo';
+
+  // Barcodes tab: Admin only
+  const tabBarcode = document.getElementById('tab-barcode');
+  if (tabBarcode) tabBarcode.style.display = isAdmin ? '' : 'none';
+
+  // Demo: disable all write actions
+  const writeEls = [
+    'submitBtn', 'lockClassBtn', 'unlockClassBtn', 'bcGenBtn', 'bcWordBtn'
+  ];
+  writeEls.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (isDemo) {
+      el.disabled = true;
+      el.title = 'Read-only access';
+    }
+  });
+
+  // Demo: hide Excel download button
+  if (isDemo) {
+    document.querySelectorAll('button').forEach(btn => {
+      if (btn.textContent.includes('Excel')) {
+        btn.disabled = true;
+        btn.title = 'Read-only access';
+      }
+    });
+  }
 }
 
 // ── Safe storage wrapper (falls back to in-memory when localStorage is blocked) ──
@@ -482,14 +719,82 @@ const store = (() => {
 
 // Restore session on page load (no logout on refresh)
 window.addEventListener('load', () => {
-  const saved = store.getItem('assetMgrUser');
-  if (saved) loginAs(saved);
+  const saved     = store.getItem('assetMgrUser');
+  const savedRole = store.getItem('assetMgrRole');
+  if (saved) loginAs(saved, savedRole || 'Editor');
 });
 
 // ══════════════════════════════════════════════════════════
 //  AUTO REFRESH — only active tab, 5 s interval to avoid hangs
 // ══════════════════════════════════════════════════════════
-let autoRefreshInterval = null;
+// ══════════════════════════════════════════════════════════
+//  SMART SYNC — timestamp-based delta polling
+//  Polls a lightweight timestamp every 2s.
+//  Only fetches full data when the timestamp changed.
+//  ~95% less data transferred vs full polling.
+// ══════════════════════════════════════════════════════════
+let syncInterval    = null;
+let lastSyncTs      = null; // last known sheet timestamp
+let syncInFlight    = false; // prevent overlapping polls
+let syncRetries     = 0;
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  const ind = document.getElementById('liveIndicator');
+  if (ind) ind.style.display = 'inline-flex';
+  syncInterval = setInterval(pollTimestamp, 2000);
+  pollTimestamp(); // immediate first check
+}
+
+function stopAutoRefresh() {
+  if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
+  const ind = document.getElementById('liveIndicator');
+  if (ind) ind.style.display = 'none';
+  syncInFlight = false;
+}
+
+function pollTimestamp() {
+  if (syncInFlight) return; // skip if previous poll still running
+  syncInFlight = true;
+  call('getLastModified', [], res => {
+    syncInFlight = false;
+    syncRetries  = 0;
+    setLiveDot(true);
+    const ts = res && res.ts ? String(res.ts) : null;
+    if (!ts || ts === lastSyncTs) return; // nothing changed
+    lastSyncTs = ts;
+    syncChangedData(); // something changed — fetch what's needed
+  }, () => {
+    syncInFlight = false;
+    syncRetries++;
+    if (syncRetries > 3) setLiveDot(false); // show offline after 3 fails
+  });
+}
+
+function setLiveDot(online) {
+  const dot = document.getElementById('liveDot');
+  if (!dot) return;
+  dot.style.background = online ? '#4ade80' : '#f87171';
+  dot.style.animation  = online ? 'livePulse 1.8s ease-in-out infinite' : 'none';
+}
+
+function syncChangedData() {
+  // Always keep locks fresh — affects all tabs
+  silentLoadLocks();
+  // Refresh active tab data
+  const activePanel = document.querySelector('.tab-panel.active');
+  const id = activePanel ? activePanel.id : '';
+  if (id === 'panel-view')       silentLoadData();
+  else if (id === 'panel-log')   silentLoadLog();
+  else if (id === 'panel-add')   {} // locks already refreshed above
+  else if (id === 'panel-stickering') {
+    call('getStickeringData', [document.getElementById('stFilterClass').value], res => {
+      stickeringData = Array.isArray(res) ? res : [];
+      stickeringRender();
+      stickeringUpdateStats();
+    }, () => {});
+  }
+}
 
 function silentLoadData() {
   call('getDataSheetInfo', [],
@@ -509,14 +814,18 @@ function silentLoadData() {
 function silentLoadLocks() {
   call('getLockedClasses', [],
     res => {
-      const incoming = new Map();
+      const incomingLocks  = new Map();
+      const incomingAssign = new Map();
       (Array.isArray(res) ? res : []).forEach(r => {
-        if (r.className) incoming.set(r.className, { lockedBy: r.lockedBy || '', timestamp: r.timestamp || '' });
+        if (!r.className) return;
+        if (r.assignedTo) incomingAssign.set(r.className, r.assignedTo);
+        if (r.locked)     incomingLocks.set(r.className, { lockedBy: r.lockedBy || '', timestamp: r.timestamp || '' });
       });
-      // Only update UI if locks changed
-      if (JSON.stringify([...incoming]) === JSON.stringify([...lockedClasses])) return;
-      lockedClasses = incoming;
-      applyClassLockState(); // re-apply to current class
+      if (JSON.stringify([...incomingLocks])  === JSON.stringify([...lockedClasses]) &&
+          JSON.stringify([...incomingAssign]) === JSON.stringify([...classAssignments])) return;
+      lockedClasses    = incomingLocks;
+      classAssignments = incomingAssign;
+      applyClassLockState();
     },
     () => {}
   );
@@ -541,33 +850,19 @@ function silentLoadLog() {
   );
 }
 
-function startAutoRefresh() {
-  stopAutoRefresh();
-  autoRefreshInterval = setInterval(() => {
-    const viewTab = document.getElementById('panel-view')?.classList.contains('active');
-    const logTab  = document.getElementById('panel-log')?.classList.contains('active');
-    const addTab  = document.getElementById('panel-add')?.classList.contains('active');
-    if (viewTab) silentLoadData();
-    if (logTab)  silentLoadLog();
-    if (addTab)  silentLoadLocks(); // keep lock state fresh for all users
-  }, 5000);
-}
-
-function stopAutoRefresh() {
-  if (autoRefreshInterval) { clearInterval(autoRefreshInterval); autoRefreshInterval = null; }
-}
-
 // ══════════════════════════════════════════════════════════
 //  TABS
 // ══════════════════════════════════════════════════════════
 function switchTab(name) {
-  ['add','view','log'].forEach(t => {
+  ['add','view','log','barcode','stickering'].forEach(t => {
     document.getElementById('panel-'+t).classList.toggle('active', t===name);
     document.getElementById('tab-'+t).classList.toggle('active', t===name);
   });
-  if (name==='add')  { silentLoadLocks(); }
-  if (name==='view') loadData();
-  if (name==='log')  loadLog();
+  if (name==='add')        { silentLoadLocks(); }
+  if (name==='view')       loadData();
+  if (name==='log')        loadLog();
+  if (name==='barcode')    initBarcodeTab();
+  if (name==='stickering') initStickeringTab();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -612,11 +907,12 @@ function populateDDs() {
   sheetData.rows.forEach(r => { if (r.itemName) itemMap[r.itemName] = r.assetCode; });
 
   // Class dropdowns
-  ['eClass','vc'].forEach(id => {
-    const sel=document.getElementById(id), cur=sel.value;
-    sel.innerHTML = id==='vc'
-      ? '<option value="">All Classes</option>'
-      : '<option value="">— Select Class —</option>';
+  ['eClass','vc','bcClass'].forEach(id => {
+    const sel=document.getElementById(id); if(!sel) return;
+    const cur=sel.value;
+    sel.innerHTML = id==='eClass'
+      ? '<option value="">— Select Class —</option>'
+      : '<option value="">All Classes</option>';
     sheetData.classHeaders.forEach(h => sel.appendChild(new Option(h,h)));
     if(cur) sel.value=cur;
   });
@@ -729,13 +1025,21 @@ function doUnlockClass() {
 
 // Apply lock state for whatever class is currently selected in the dropdown
 function applyClassLockState() {
-  const cls    = document.getElementById('eClass').value;
-  const locked = lockedClasses.has(cls);
+  const cls        = document.getElementById('eClass').value;
+  const locked     = lockedClasses.has(cls);
+  const assignedTo = classAssignments.get(cls) || '';
+  const isBlocked  = assignedTo && assignedTo !== currentUser && !ADMIN_USERS.includes(currentUser);
+
   updateLockUI(cls);
-  document.getElementById('submitBtn').disabled = locked;
+  document.getElementById('submitBtn').disabled = locked || isBlocked || currentRole === 'Demo';
+
   if (cls && locked) {
     const info = lockedClasses.get(cls);
     showMsg('sm', `"${cls}" is locked by ${info.lockedBy}. Only Kush or Darsh can unlock.`, 'info');
+  } else if (cls && isBlocked) {
+    showMsg('sm', `"${cls}" is assigned to ${assignedTo} only. You cannot add entries here.`, 'err');
+  } else if (cls && assignedTo && ADMIN_USERS.includes(currentUser)) {
+    showMsg('sm', `"${cls}" is assigned to ${assignedTo}.`, 'info');
   } else {
     clearMsg('sm');
   }
@@ -743,8 +1047,9 @@ function applyClassLockState() {
 
 function updateLockUI(cls) {
   const locked = lockedClasses.has(cls);
-  document.getElementById('lockClassBtn').style.display   = (cls && !locked) ? '' : 'none';
-  document.getElementById('unlockClassBtn').style.display = (cls && locked)  ? '' : 'none';
+  const isDemo = currentRole === 'Demo';
+  document.getElementById('lockClassBtn').style.display   = (!isDemo && cls && !locked) ? '' : 'none';
+  document.getElementById('unlockClassBtn').style.display = (!isDemo && cls && locked)  ? '' : 'none';
   // Show who locked it
   const info = locked ? lockedClasses.get(cls) : null;
   const lockInfoEl = document.getElementById('lockInfo');
@@ -936,6 +1241,10 @@ function submitEntry() {
   const className = document.getElementById('eClass').value.trim();
   const qty       = parseInt(document.getElementById('eQty').value, 10);
 
+  const assignedTo = classAssignments.get(className) || '';
+  if (assignedTo && assignedTo !== currentUser && !ADMIN_USERS.includes(currentUser)) {
+    showMsg('sm', `"${className}" is assigned to ${assignedTo} only.`, 'err'); return;
+  }
   if (lockedClasses.has(className)) { showMsg('sm', `"${className}" is locked. Only Kush or Darsh can unlock it.`, 'err'); return; }
   if (!itemName || !itemMap[itemName]) { showMsg('sm','Please select a valid item from the list.','err'); return; }
   if (!assetCode)                      { showMsg('sm','Asset code is missing.','err'); return; }
@@ -988,6 +1297,764 @@ function clearForm() {
   document.getElementById('eQty').value         = '1';
   document.getElementById('prevBox').classList.remove('show');
   clearMsg('sm');
+}
+
+// ══════════════════════════════════════════════════════════
+//  BARCODE / LABEL TAB  (text codes only, matches VBA)
+// ══════════════════════════════════════════════════════════
+let bcData = []; // [{className, itemName, assetCode, codeText}]
+
+function initBarcodeTab() {
+  if (sheetData.classHeaders.length) {
+    const sel = document.getElementById('bcClass');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">All Classes</option>';
+    sheetData.classHeaders.forEach(h => sel.appendChild(new Option(h, h)));
+    if (cur) sel.value = cur;
+  }
+}
+
+function generateBarcodes() {
+  clearMsg('bcMsg');
+  if (!sheetData || !sheetData.rows || !sheetData.rows.length) {
+    showMsg('bcMsg', 'No data loaded yet — visit the Register tab first, then come back here.', 'err');
+    return;
+  }
+
+  const schoolCode = (document.getElementById('bcSchoolCode').value.trim() || 'SCH').toUpperCase();
+  const filterCls  = document.getElementById('bcClass').value;
+
+  // Sequence per assetCode resets across the WHOLE dataset
+  // (same logic as GAS generateBarcodes)
+  const seqMap = {};
+  bcData = [];
+
+  sheetData.classHeaders.forEach(cls => {
+    if (filterCls && cls !== filterCls) return;
+    const ci = sheetData.classHeaders.indexOf(cls);
+
+    sheetData.rows.forEach(row => {
+      const qty = Math.max(0, parseInt(row.classCounts[ci]) || 0);
+      if (!qty) return;
+
+      if (!seqMap[row.assetCode]) seqMap[row.assetCode] = 0;
+
+      for (let q = 0; q < qty; q++) {
+        seqMap[row.assetCode]++;
+        const seq = String(seqMap[row.assetCode]).padStart(4, '0');
+        bcData.push({
+          className: cls,
+          itemName:  row.itemName,
+          assetCode: row.assetCode,
+          codeText:  `${schoolCode}/${row.assetCode}/${seq}`
+        });
+      }
+    });
+  });
+
+  if (!bcData.length) {
+    showMsg('bcMsg', 'No items with quantities found for the selected class.', 'err');
+    document.getElementById('bcSummary').style.display = 'none';
+    document.getElementById('bcWordBtn').style.display  = 'none';
+    document.getElementById('bcContainer').innerHTML    = '';
+    return;
+  }
+
+  // Stats
+  document.getElementById('bcStatCls').textContent   = [...new Set(bcData.map(b => b.className))].length;
+  document.getElementById('bcStatItems').textContent  = [...new Set(bcData.map(b => b.assetCode))].length;
+  document.getElementById('bcStatTotal').textContent  = bcData.length;
+  document.getElementById('bcSummary').style.display  = '';
+  document.getElementById('bcWordBtn').style.display  = '';
+
+  renderBarcodeGrid();
+
+  // Save to Bar Code sheet (replaces old data — no duplicates)
+  showMsg('bcMsg', '⏳ Saving to Google Sheet…', 'info');
+  const payload = bcData.map((b, i) => ({
+    slNo:      i + 1,
+    codeText:  b.codeText,
+    itemName:  b.itemName,
+    className: b.className
+  }));
+
+  call('saveBarcodes', [payload],
+    res => {
+      if (res && res.success) {
+        showMsg('bcMsg', `✓ ${res.count} labels saved to Bar Code sheet.`, 'ok');
+      } else {
+        showMsg('bcMsg', (res && res.message) || 'Saved (no confirmation).', 'ok');
+      }
+    },
+    err => showMsg('bcMsg', '⚠️ Labels shown above — sheet save failed: ' + err, 'err')
+  );
+}
+
+function renderBarcodeGrid() {
+  // Group by class (preserve order)
+  const byClass = {}, classOrder = [];
+  bcData.forEach(b => {
+    if (!byClass[b.className]) { byClass[b.className] = []; classOrder.push(b.className); }
+    byClass[b.className].push(b);
+  });
+  const classes = [...new Set(classOrder)];
+
+  let html = '';
+  classes.forEach(cls => {
+    const items = byClass[cls];
+    html += `<div class="bc-class-section">
+      <div class="bc-class-title">${cls}
+        <span class="bc-count">${items.length} label${items.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="bc-grid">`;
+    // First card = class name (matches Word output)
+    html += `<div class="bc-card bc-card-cls"><div class="bc-code-text" style="color:var(--g700);font-size:13px">${cls}</div></div>`;
+    items.forEach(b => {
+      html += `<div class="bc-card"><div class="bc-code-text">${b.codeText}</div></div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  document.getElementById('bcContainer').innerHTML = html;
+}
+
+// ──────────────────────────────────────────────────────
+//  WORD DOWNLOAD  — JSZip + raw Open XML (no external docx lib needed)
+//  Matches VBA exactly:
+//    A4, top=0.1cm, bottom=0, left/right=0.5cm
+//    4 cols × 5cm (2835 DXA), row height 2.1cm exact (1191 DXA)
+//    Times New Roman 14pt, centred, no bold, no borders
+// ──────────────────────────────────────────────────────
+async function downloadWordDoc() {
+  if (typeof JSZip === 'undefined') {
+    showMsg('bcMsg', 'ZIP library not loaded — check your internet and refresh.', 'err'); return;
+  }
+  if (!bcData.length) {
+    showMsg('bcMsg', 'Click "Generate Labels" first.', 'err'); return;
+  }
+
+  showMsg('bcMsg', '⏳ Building Word file…', 'info');
+  document.getElementById('bcWordBtn').disabled = true;
+
+  try {
+    // ── group by class ──────────────────────────────────
+    const byClass = {}, classOrder = [];
+    bcData.forEach(b => {
+      if (!byClass[b.className]) { byClass[b.className] = []; classOrder.push(b.className); }
+      byClass[b.className].push(b.codeText);
+    });
+    const classes = [...new Set(classOrder)];
+
+    // ── XML helpers ─────────────────────────────────────
+    const esc = s => String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+
+    const NO_BORDER =
+      '<w:top w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+      '<w:left w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+      '<w:bottom w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+      '<w:right w:val="none" w:sz="0" w:space="0" w:color="auto"/>';
+
+    function xmlCell(code) {
+      return `<w:tc>
+        <w:tcPr>
+          <w:tcW w:w="2835" w:type="dxa"/>
+          <w:tcBorders>${NO_BORDER}</w:tcBorders>
+          <w:tcMar>
+            <w:top w:w="0" w:type="dxa"/>
+            <w:left w:w="57" w:type="dxa"/>
+            <w:bottom w:w="0" w:type="dxa"/>
+            <w:right w:w="57" w:type="dxa"/>
+          </w:tcMar>
+          <w:vAlign w:val="center"/>
+        </w:tcPr>
+        <w:p>
+          <w:pPr>
+            <w:jc w:val="center"/>
+            <w:spacing w:before="0" w:after="0"/>
+          </w:pPr>
+          <w:r>
+            <w:rPr>
+              <w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>
+              <w:sz w:val="28"/><w:szCs w:val="28"/>
+            </w:rPr>
+            <w:t>${esc(code)}</w:t>
+          </w:r>
+        </w:p>
+      </w:tc>`;
+    }
+
+    // ── class-name cell (bold, larger font, spans no cols — just 1 cell like a sticker) ──
+    function xmlClassNameCell(cls) {
+      return `<w:tc>
+        <w:tcPr>
+          <w:tcW w:w="2835" w:type="dxa"/>
+          <w:tcBorders>${NO_BORDER}</w:tcBorders>
+          <w:tcMar>
+            <w:top w:w="0" w:type="dxa"/>
+            <w:left w:w="57" w:type="dxa"/>
+            <w:bottom w:w="0" w:type="dxa"/>
+            <w:right w:w="57" w:type="dxa"/>
+          </w:tcMar>
+          <w:vAlign w:val="center"/>
+          <w:shd w:val="clear" w:color="auto" w:fill="D9EAD3"/>
+        </w:tcPr>
+        <w:p>
+          <w:pPr>
+            <w:jc w:val="center"/>
+            <w:spacing w:before="0" w:after="0"/>
+          </w:pPr>
+          <w:r>
+            <w:rPr>
+              <w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>
+              <w:b/><w:sz w:val="32"/><w:szCs w:val="32"/>
+            </w:rPr>
+            <w:t>${esc(cls)}</w:t>
+          </w:r>
+        </w:p>
+      </w:tc>`;
+    }
+
+    // ── build body XML ──────────────────────────────────
+    let body = '';
+
+    classes.forEach((cls, ci) => {
+      // page break before every class except first
+      if (ci > 0) body += `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`;
+
+      // Prepend class name as first item, then codes
+      const allItems = [{ isClass: true, value: cls }, ...byClass[cls].map(c => ({ isClass: false, value: c }))];
+      const numRows  = Math.ceil(allItems.length / 4);
+
+      body += `<w:tbl>
+        <w:tblPr>
+          <w:tblW w:w="11340" w:type="dxa"/>
+          <w:tblBorders>
+            ${NO_BORDER}
+            <w:insideH w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+            <w:insideV w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+          </w:tblBorders>
+        </w:tblPr>
+        <w:tblGrid>
+          <w:gridCol w:w="2835"/><w:gridCol w:w="2835"/>
+          <w:gridCol w:w="2835"/><w:gridCol w:w="2835"/>
+        </w:tblGrid>`;
+
+      for (let r = 0; r < numRows; r++) {
+        body += `<w:tr><w:trPr><w:trHeight w:val="1191" w:hRule="exact"/></w:trPr>`;
+        for (let c = 0; c < 4; c++) {
+          const idx  = r * 4 + c;
+          const item = idx < allItems.length ? allItems[idx] : null;
+          if (item && item.isClass) {
+            body += xmlClassNameCell(item.value);
+          } else {
+            body += xmlCell(item ? item.value : '');
+          }
+        }
+        body += `</w:tr>`;
+      }
+      body += `</w:tbl>`;
+    });
+
+    // section properties (page setup matching VBA exactly)
+    body += `<w:sectPr>
+      <w:pgSz w:w="11906" w:h="16838"/>
+      <w:pgMar w:top="57" w:right="284" w:bottom="0" w:left="284"
+               w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>`;
+
+    // ── assemble docx ZIP ───────────────────────────────
+    const docXml =
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"` +
+      ` xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
+      `<w:body>${body}</w:body></w:document>`;
+
+    const contentTypes =
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+      `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+      `<Default Extension="xml" ContentType="application/xml"/>` +
+      `<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>` +
+      `</Types>`;
+
+    const rootRels =
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+      `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>` +
+      `</Relationships>`;
+
+    const wordRels =
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>`;
+
+    const zip = new JSZip();
+    zip.file('[Content_Types].xml', contentTypes);
+    zip.file('_rels/.rels',         rootRels);
+    zip.file('word/document.xml',   docXml);
+    zip.file('word/_rels/document.xml.rels', wordRels);
+
+    const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    saveAs(blob, 'Labels_ClassWise.docx');
+    clearMsg('bcMsg');
+
+  } catch(err) {
+    showMsg('bcMsg', '❌ Error: ' + (err.message || String(err)), 'err');
+    console.error(err);
+  } finally {
+    document.getElementById('bcWordBtn').disabled = false;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  STICKERING TAB
+// ══════════════════════════════════════════════════════════
+let stickeringData  = []; // rows from Stickering sheet
+let barCodeTabData  = []; // rows from Bar Code sheet (for cancel cascade)
+
+function initStickeringTab() {
+  const isAdmin = currentRole === 'Admin';
+  document.getElementById('stCancelCard').style.display = (currentRole === 'Demo') ? 'none' : '';
+
+  // Populate class dropdowns
+  const classes = sheetData.classHeaders || [];
+  ['stCancelClass', 'stFilterClass', 'stNewClass'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const prev = sel.value;
+    if (id === 'stFilterClass') sel.innerHTML = '<option value="">All Classes</option>';
+    else sel.innerHTML = '<option value="">— Select Class —</option>';
+    classes.forEach(c => {
+      const o = document.createElement('option');
+      o.value = o.textContent = c;
+      sel.appendChild(o);
+    });
+    if (prev) sel.value = prev;
+  });
+
+  const isDemo = currentRole === 'Demo';
+  const stAddBtn = document.getElementById('stAddBtn');
+  if (stAddBtn) stAddBtn.disabled = isDemo;
+
+  // Load Bar Code tab data for cancel section (Admin only)
+  if (isAdmin) {
+    call('getBarCodeTabData', [], res => {
+      barCodeTabData = Array.isArray(res) ? res : [];
+    }, () => { barCodeTabData = []; });
+  }
+
+  stickeringLoad();
+}
+
+function stickeringLoad() {
+  document.getElementById('stTableWrap').innerHTML =
+    '<div class="tbl-loading"><span class="spin dk"></span><span>Loading…</span></div>';
+  const cls = document.getElementById('stFilterClass').value;
+  call('getStickeringData', [cls], res => {
+    stickeringData = Array.isArray(res) ? res : [];
+    stickeringRender();
+    stickeringUpdateStats();
+  }, err => {
+    document.getElementById('stTableWrap').innerHTML =
+      '<div class="tbl-empty" style="color:var(--red)">Error: ' + err + '</div>';
+  });
+}
+
+// ── Cascading Cancel filters ───────────────────────────────
+
+let stCancelItems = []; // available item names for current class
+
+function stCancelClassChange() {
+  const cls = document.getElementById('stCancelClass').value;
+  const box = document.getElementById('stCancelItemBox');
+
+  // Reset Step 2
+  document.getElementById('stCancelItemSearch').value = '';
+  document.getElementById('stCancelCsList').style.display = 'none';
+  stCancelItems = [];
+
+  // Reset Step 3
+  document.getElementById('stBcCheckWrap').style.display = 'none';
+  document.getElementById('stBcCheckList').innerHTML = '';
+  document.getElementById('stBcSelCount').textContent = '0 selected';
+  document.getElementById('stSubmitCancelBtn').disabled = true;
+  clearMsg('stCancelMsg');
+
+  if (!cls) {
+    box.style.opacity = '.55';
+    box.style.pointerEvents = 'none';
+    return;
+  }
+
+  const cancelledCodes = new Set(
+    stickeringData.filter(r => r.remarks === 'Cancelled').map(r => r.barCode)
+  );
+  stCancelItems = [...new Set(
+    barCodeTabData
+      .filter(r => r.className === cls && !cancelledCodes.has(r.barCode))
+      .map(r => r.itemName)
+      .filter(Boolean)
+  )].sort();
+
+  if (!stCancelItems.length) {
+    showMsg('stCancelMsg', 'No active barcodes found for this class.', 'info');
+    box.style.opacity = '.55';
+    box.style.pointerEvents = 'none';
+    return;
+  }
+
+  box.style.opacity = '1';
+  box.style.pointerEvents = '';
+}
+
+function stCancelCsOpen() {
+  const val = document.getElementById('stCancelItemSearch').value.toLowerCase();
+  const filtered = stCancelItems.filter(n => !val || n.toLowerCase().includes(val));
+  stCancelCsRender(filtered);
+}
+
+function stCancelCsFilter() {
+  const val = document.getElementById('stCancelItemSearch').value.toLowerCase();
+  const filtered = stCancelItems.filter(n => n.toLowerCase().includes(val));
+  stCancelCsRender(filtered);
+}
+
+function stCancelCsToggle() {
+  const list = document.getElementById('stCancelCsList');
+  if (list.style.display === 'block') list.style.display = 'none';
+  else { stCancelCsOpen(); document.getElementById('stCancelItemSearch').focus(); }
+}
+
+function stCancelCsRender(items) {
+  const list = document.getElementById('stCancelCsList');
+  if (!items.length) {
+    list.innerHTML = '<div class="cs-empty">No items found</div>';
+  } else {
+    list.innerHTML = items.map(n =>
+      `<div class="cs-opt" onmousedown="event.preventDefault();stCancelCsSelect('${n.replace(/'/g,"\\'")}')" ontouchend="event.preventDefault();stCancelCsSelect('${n.replace(/'/g,"\\'")}')">${n}</div>`
+    ).join('');
+  }
+  list.style.display = 'block';
+}
+
+function stCancelCsSelect(name) {
+  document.getElementById('stCancelItemSearch').value = name;
+  document.getElementById('stCancelCsList').style.display = 'none';
+  stCancelItemChange(name);
+}
+
+document.addEventListener('mousedown', e => {
+  if (!document.getElementById('stCancelItemWrap').contains(e.target))
+    document.getElementById('stCancelCsList').style.display = 'none';
+});
+
+function stCancelItemChange(item) {
+  const cls  = document.getElementById('stCancelClass').value;
+  const wrap = document.getElementById('stBcCheckWrap');
+  const list = document.getElementById('stBcCheckList');
+  document.getElementById('stSubmitCancelBtn').disabled = true;
+  document.getElementById('stBcSelCount').textContent = '0 selected';
+  clearMsg('stCancelMsg');
+
+  if (!item) { wrap.style.display = 'none'; list.innerHTML = ''; return; }
+
+  const cancelledCodes = new Set(
+    stickeringData.filter(r => r.remarks === 'Cancelled').map(r => r.barCode)
+  );
+
+  const codes = barCodeTabData.filter(r =>
+    r.className === cls && r.itemName === item && !cancelledCodes.has(r.barCode)
+  );
+
+  if (!codes.length) {
+    wrap.style.display = 'none';
+    showMsg('stCancelMsg', 'No active barcodes found for this selection.', 'info');
+    return;
+  }
+
+  list.innerHTML = codes.map(r =>
+    `<label class="bc-pill" style="display:inline-flex;align-items:center;gap:7px;
+      background:var(--s50);border:2px solid var(--s300);border-radius:10px;
+      padding:7px 14px;cursor:pointer;font-family:monospace;font-size:13px;
+      font-weight:700;user-select:none;transition:all .15s;color:var(--s700)">
+      <input type="checkbox" class="st-bc-chk" data-slno="${r.slNo}" data-code="${r.barCode}"
+        onchange="stBcSelChange(this)" style="display:none">
+      <span class="bc-tick" style="width:18px;height:18px;border-radius:5px;border:2px solid var(--s300);
+        display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+        background:#fff;transition:all .15s;font-size:11px"></span>
+      ${r.barCode}
+    </label>`
+  ).join('');
+
+  wrap.style.display = 'block';
+}
+
+function stBcSelChange(chk) {
+  // Update pill style for the changed checkbox
+  if (chk) {
+    const pill = chk.closest('.bc-pill');
+    const tick = pill.querySelector('.bc-tick');
+    if (chk.checked) {
+      pill.style.background  = '#fef2f2';
+      pill.style.borderColor = '#dc2626';
+      pill.style.color       = '#dc2626';
+      tick.style.background  = '#dc2626';
+      tick.style.borderColor = '#dc2626';
+      tick.textContent       = '✓';
+    } else {
+      pill.style.background  = 'var(--s50)';
+      pill.style.borderColor = 'var(--s300)';
+      pill.style.color       = 'var(--s700)';
+      tick.style.background  = '#fff';
+      tick.style.borderColor = 'var(--s300)';
+      tick.textContent       = '';
+    }
+  }
+  const count = document.querySelectorAll('.st-bc-chk:checked').length;
+  document.getElementById('stBcSelCount').textContent = count + ' selected';
+  document.getElementById('stSubmitCancelBtn').disabled = count === 0;
+}
+
+function stSelectAllBc(checked) {
+  document.querySelectorAll('.st-bc-chk').forEach(c => {
+    c.checked = checked;
+    stBcSelChange(c);
+  });
+}
+
+function stSubmitCancel() {
+  const checked = [...document.querySelectorAll('.st-bc-chk:checked')];
+  if (!checked.length) return;
+  const slNos = checked.map(c => c.dataset.slno);
+  const codes = checked.map(c => c.dataset.code).join(', ');
+  if (!confirm(`Mark ${slNos.length} sticker(s) as Cancelled?\n\n${codes}`)) return;
+
+  setBusy('stSubmitCancelBtn', true, '❌ Mark as Cancelled');
+  // cancelBarCodes updates the Bar Code sheet's Remarks column to "Cancelled"
+  call('cancelBarCodes', [slNos], res => {
+    setBusy('stSubmitCancelBtn', false, '❌ Mark as Cancelled');
+    showMsg('stCancelMsg', `✅ ${slNos.length} sticker(s) marked as Cancelled.`, 'ok');
+    // Reset cascade
+    document.getElementById('stCancelClass').value = '';
+    document.getElementById('stCancelItemSearch').value = '';
+    document.getElementById('stCancelCsList').style.display = 'none';
+    document.getElementById('stCancelItemBox').style.opacity = '.55';
+    document.getElementById('stCancelItemBox').style.pointerEvents = 'none';
+    stCancelItems = [];
+    document.getElementById('stBcCheckWrap').style.display = 'none';
+    document.getElementById('stBcCheckList').innerHTML = '';
+    // Reload both datasets
+    call('getBarCodeTabData', [], res2 => { barCodeTabData = Array.isArray(res2) ? res2 : []; }, () => {});
+    stickeringLoad();
+  }, err => {
+    setBusy('stSubmitCancelBtn', false, '❌ Mark as Cancelled');
+    showMsg('stCancelMsg', 'Error: ' + err, 'err');
+  });
+}
+
+// ── Records table (view only) ─────────────────────────────
+
+function stickeringFilteredRows() {
+  const statusFilter = document.getElementById('stFilterStatus').value;
+  if (statusFilter === 'New Added') return stickeringData.filter(r => r.remarks === 'New Added');
+  if (statusFilter === 'Cancelled') return stickeringData.filter(r => r.remarks === 'Cancelled');
+  if (statusFilter === 'Active')    return stickeringData.filter(r => !r.remarks || (r.remarks !== 'New Added' && r.remarks !== 'Cancelled'));
+  return stickeringData;
+}
+
+function stickeringRender() {
+  const rows = stickeringFilteredRows();
+  if (!rows.length) {
+    document.getElementById('stTableWrap').innerHTML = '<div class="tbl-empty">No records found.</div>';
+    return;
+  }
+
+  let html = `<div style="overflow-x:auto"><table class="data-tbl" style="min-width:580px">
+    <thead><tr>
+      <th>Sl No.</th><th>Bar Code</th><th>Item Name</th><th>Class Name</th><th>Remarks</th>
+    </tr></thead><tbody>`;
+
+  rows.forEach(r => {
+    const isCancelled = r.remarks === 'Cancelled';
+    const badgeStyle = isCancelled
+      ? 'background:#fecaca;color:#dc2626;'
+      : r.remarks === 'New Added'
+        ? 'background:#c6ecd8;color:#14532d;'
+        : 'background:#e2e8f0;color:#475569;';
+    const badge = `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;${badgeStyle}">${r.remarks || 'Active'}</span>`;
+    html += `<tr style="${isCancelled ? 'opacity:.5;' : ''}">
+      <td>${r.slNo}</td>
+      <td style="font-family:monospace;font-weight:600">${r.barCode}</td>
+      <td>${r.itemName}</td>
+      <td>${r.className}</td>
+      <td>${badge}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('stTableWrap').innerHTML = html;
+}
+
+// ── Add new sticker code ──────────────────────────────────
+
+// ── Add New — Class change → enable Item dropdown ─────────
+
+function stNewClassChange() {
+  const cls = document.getElementById('stNewClass').value;
+  const box = document.getElementById('stNewItemBox');
+  document.getElementById('stNewItem').value = '';
+  document.getElementById('stCsItemList').style.display = 'none';
+  document.getElementById('stNewCode').value = '';
+  document.getElementById('stNewCodeHint').textContent = '';
+  clearMsg('stAddMsg');
+  if (!cls) {
+    box.style.opacity = '.55';
+    box.style.pointerEvents = 'none';
+  } else {
+    box.style.opacity = '1';
+    box.style.pointerEvents = '';
+  }
+}
+
+// ── Add New — Item Name searchable dropdown ───────────────
+
+function stCsOpen() {
+  const val = document.getElementById('stNewItem').value.toLowerCase();
+  const names = [...new Set((sheetData.rows || []).map(r => r.itemName).filter(Boolean))].sort();
+  stCsRender(names.filter(n => !val || n.toLowerCase().includes(val)));
+}
+
+function stCsFilter() {
+  const val = document.getElementById('stNewItem').value.toLowerCase();
+  const names = [...new Set((sheetData.rows || []).map(r => r.itemName).filter(Boolean))].sort();
+  stCsRender(names.filter(n => n.toLowerCase().includes(val)));
+}
+
+function stCsToggle() {
+  const list = document.getElementById('stCsItemList');
+  if (list.style.display === 'block') list.style.display = 'none';
+  else { stCsOpen(); document.getElementById('stNewItem').focus(); }
+}
+
+function stCsRender(items) {
+  const list = document.getElementById('stCsItemList');
+  list.innerHTML = items.length
+    ? items.map(n => `<div class="cs-opt" onmousedown="event.preventDefault();stCsSelect('${n.replace(/'/g,"\\'")}')" ontouchend="event.preventDefault();stCsSelect('${n.replace(/'/g,"\\'")}')">${n}</div>`).join('')
+    : '<div class="cs-empty">No items found</div>';
+  list.style.display = 'block';
+}
+
+function stCsSelect(name) {
+  document.getElementById('stNewItem').value = name;
+  document.getElementById('stCsItemList').style.display = 'none';
+  stSuggestBarCode(name);
+}
+
+// Auto-suggest next bar code when item is selected
+function stSuggestBarCode(itemName) {
+  const hint = document.getElementById('stNewCodeHint');
+  // Find asset code from sheetData rows
+  const row = (sheetData.rows || []).find(r => r.itemName === itemName);
+  if (!row || !row.assetCode) { hint.textContent = ''; return; }
+
+  const assetCode = row.assetCode;
+  // Find school code prefix from existing barCodeTabData
+  const existing = barCodeTabData.filter(r => r.barCode && r.barCode.includes('/' + assetCode + '/'));
+  let schoolCode = 'SCH';
+  if (existing.length) {
+    const parts = existing[0].barCode.split('/');
+    if (parts.length >= 1) schoolCode = parts[0];
+  }
+
+  // Find highest sequence number for this asset code across Bar Code tab
+  let maxSeq = 0;
+  barCodeTabData.forEach(r => {
+    const parts = String(r.barCode || '').split('/');
+    if (parts.length === 3 && parts[1] === assetCode) {
+      const seq = parseInt(parts[2]) || 0;
+      if (seq > maxSeq) maxSeq = seq;
+    }
+  });
+  // Also check stickeringData
+  stickeringData.forEach(r => {
+    const parts = String(r.barCode || '').split('/');
+    if (parts.length === 3 && parts[1] === assetCode) {
+      const seq = parseInt(parts[2]) || 0;
+      if (seq > maxSeq) maxSeq = seq;
+    }
+  });
+
+  const nextSeq = String(maxSeq + 1).padStart(4, '0');
+  const suggested = `${schoolCode}/${assetCode}/${nextSeq}`;
+  document.getElementById('stNewCode').value = suggested;
+  hint.textContent = '(auto-suggested)';
+}
+
+document.addEventListener('mousedown', e => {
+  if (!document.getElementById('stItemSelectWrap').contains(e.target))
+    document.getElementById('stCsItemList').style.display = 'none';
+});
+
+function stickeringAddNew() {
+  if (currentRole === 'Demo') return;
+  const code = document.getElementById('stNewCode').value.trim().toUpperCase();
+  const item = document.getElementById('stNewItem').value.trim();
+  const cls  = document.getElementById('stNewClass').value;
+  if (!cls)  { showMsg('stAddMsg', 'Please select a Class Name.', 'err'); return; }
+  if (!item) { showMsg('stAddMsg', 'Please select an Item Name.', 'err'); return; }
+  if (!code) { showMsg('stAddMsg', 'Please enter a Bar Code.', 'err'); return; }
+
+  // Client-side duplicate check — Bar Code tab
+  const inBarCode = barCodeTabData.some(r => r.barCode.toUpperCase() === code);
+  // Client-side duplicate check — Stickering tab
+  const inStickering = stickeringData.some(r => r.barCode.toUpperCase() === code);
+
+  if (inBarCode || inStickering) {
+    const where = inBarCode && inStickering ? 'Bar Code and Stickering tabs'
+                : inBarCode ? 'Bar Code tab' : 'Stickering tab';
+    if (!confirm(`⚠️ Bar code "${code}" already exists in the ${where}.\n\nDo you still want to add it?`)) return;
+  }
+
+  setBusy('stAddBtn', true, '➕ Add New Code');
+  call('addStickeringRow', [{ barCode: code, itemName: item, className: cls }], res => {
+    setBusy('stAddBtn', false, '➕ Add New Code');
+    if (res && res.duplicate) {
+      showMsg('stAddMsg', `⚠️ Bar code "${code}" already exists in Stickering sheet.`, 'err'); return;
+    }
+    showMsg('stAddMsg', `✅ "${code}" added successfully.`, 'ok');
+    stickeringClearAdd();
+    // Reload bar code data too so next suggestion is accurate
+    call('getBarCodeTabData', [], r2 => { barCodeTabData = Array.isArray(r2) ? r2 : []; }, () => {});
+    stickeringLoad();
+  }, err => {
+    setBusy('stAddBtn', false, '➕ Add New Code');
+    showMsg('stAddMsg', 'Error: ' + err, 'err');
+  });
+}
+
+function stickeringClearAdd() {
+  document.getElementById('stNewClass').value = '';
+  document.getElementById('stNewItem').value  = '';
+  document.getElementById('stCsItemList').style.display = 'none';
+  document.getElementById('stNewItemBox').style.opacity = '.55';
+  document.getElementById('stNewItemBox').style.pointerEvents = 'none';
+  document.getElementById('stNewCode').value  = '';
+  document.getElementById('stNewCodeHint').textContent = '';
+  clearMsg('stAddMsg');
+}
+
+// ── Stats ─────────────────────────────────────────────────
+
+function stickeringUpdateStats() {
+  const total     = stickeringData.length;
+  const cancelled = stickeringData.filter(r => r.remarks === 'Cancelled').length;
+  const newAdded  = stickeringData.filter(r => r.remarks === 'New Added').length;
+  const active    = total - cancelled - newAdded;
+  document.getElementById('stStatTotal').textContent     = total;
+  document.getElementById('stStatActive').textContent    = active;
+  document.getElementById('stStatNew').textContent       = newAdded;
+  document.getElementById('stStatCancelled').textContent = cancelled;
 }
 </script>
 </body>
